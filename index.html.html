@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퍼스널컬러 & 헤어스타일 분석</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#faf7f2;--warm:#f5ede0;--gold:#c9a96e;--gold-light:#e8d5b0;
+  --rose:#d4a0a0;--dark:#1a1410;--brown:#5c3d2e;--text:#2d2420;
+  --muted:#9c8878;--border:rgba(201,169,110,0.25);--surface:rgba(255,255,255,0.75);
+  --blue:#7a9ec0;--blue-light:#d0e4f5;
+}
+body{background:var(--cream);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── LOCK SCREEN ── */
+#lockScreen{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#1a1410 0%,#2d1f14 50%,#1a1410 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px}
+#lockScreen.hidden{display:none}
+.lock-logo{text-align:center;margin-bottom:36px}
+.lock-logo-main{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,6vw,3rem);color:var(--gold);letter-spacing:3px;line-height:1.1;font-weight:300}
+.lock-logo-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(0.9rem,3vw,1.2rem);color:rgba(201,169,110,0.6);letter-spacing:6px;margin-top:4px}
+.lock-divider{width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:16px auto}
+.lock-tagline{font-size:0.75rem;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-top:8px}
+.lock-card{background:rgba(255,255,255,0.05);border:1px solid rgba(201,169,110,0.2);border-radius:20px;padding:32px 28px;max-width:380px;width:100%;backdrop-filter:blur(10px)}
+.lock-title{text-align:center;font-size:0.8rem;color:rgba(255,255,255,0.5);letter-spacing:2px;margin-bottom:20px}
+.lock-input-wrap{position:relative;margin-bottom:14px}
+.lock-input{width:100%;padding:14px 46px 14px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(201,169,110,0.25);border-radius:12px;color:white;font-size:1rem;font-family:'Noto Sans KR',sans-serif;letter-spacing:3px;outline:none;transition:border-color 0.25s}
+.lock-input::placeholder{letter-spacing:0;color:rgba(255,255,255,0.25);font-size:0.85rem}
+.lock-input:focus{border-color:var(--gold)}
+.lock-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:16px;padding:2px}
+.lock-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--gold),#a07840);border:none;border-radius:12px;color:#1a1410;font-size:0.95rem;font-family:'Cormorant Garamond',serif;letter-spacing:2px;cursor:pointer;font-weight:600;transition:all 0.25s;box-shadow:0 6px 20px rgba(201,169,110,0.3)}
+.lock-btn:hover{transform:translateY(-1px);box-shadow:0 10px 28px rgba(201,169,110,0.45)}
+.lock-error{text-align:center;color:#f08080;font-size:0.78rem;margin-top:10px;min-height:18px;transition:opacity 0.3s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.lock-card.shake{animation:shake 0.4s ease}
+
+/* ── ADMIN PANEL ── */
+#adminBtn{position:fixed;bottom:20px;right:20px;z-index:1000;background:rgba(92,61,46,0.85);color:var(--gold);border:1px solid var(--gold);border-radius:50%;width:44px;height:44px;font-size:18px;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.25s;display:none}
+#adminBtn:hover{background:var(--brown);transform:scale(1.1)}
+#adminModal{position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}
+#adminModal.open{display:flex}
+.admin-box{background:var(--cream);border:1px solid var(--border);border-radius:20px;padding:28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.admin-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--dark);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+.admin-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+.admin-label{font-size:0.78rem;color:var(--muted);margin-bottom:6px;display:block}
+.admin-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem;font-family:'Noto Sans KR',sans-serif;background:var(--surface);color:var(--dark);outline:none;transition:border-color 0.2s;margin-bottom:14px}
+.admin-input:focus{border-color:var(--gold)}
+.admin-row{display:flex;gap:10px;margin-bottom:12px}
+.admin-save{flex:1;padding:12px;background:linear-gradient(135deg,var(--brown),#7a5040);color:var(--cream);border:none;border-radius:10px;font-size:0.88rem;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s}
+.admin-save:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(92,61,46,0.3)}
+.admin-info{font-size:0.74rem;color:var(--muted);background:var(--warm);border-radius:9px;padding:9px 11px;line-height:1.6;margin-top:4px}
+.admin-status{font-size:0.77rem;color:#2a7a50;margin-top:8px;min-height:18px;text-align:center}
+
+/* ── HAIR LENGTH SELECTION ── */
+#hairLengthSection{display:none}
+#hairLengthSection.visible{display:block;animation:fadeUp 0.4s ease}
+.hair-length-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:440px;margin:0 auto 20px}
+.hl-card{background:var(--surface);border:2px solid var(--border);border-radius:18px;padding:22px 14px 18px;text-align:center;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;user-select:none}
+.hl-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.3s;background:radial-gradient(ellipse at 50% 0%,rgba(201,169,110,0.18),transparent 70%)}
+.hl-card:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 10px 28px rgba(201,169,110,0.18)}
+.hl-card:hover::before,.hl-card.selected::before{opacity:1}
+.hl-card.selected{border-color:var(--gold);background:rgba(245,237,224,0.9);box-shadow:0 8px 24px rgba(201,169,110,0.22)}
+.hl-emoji{font-size:38px;margin-bottom:8px;display:block}
+.hl-label{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--dark);margin-bottom:3px}
+.hl-desc{font-size:0.69rem;color:var(--muted);line-height:1.5}
+.hl-check{position:absolute;top:9px;right:9px;width:18px;height:18px;border-radius:50%;background:var(--gold);color:white;font-size:9px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.25s}
+.hl-card.selected .hl-check{opacity:1}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:100;opacity:0.5}
+.bg-deco{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}
+.bg-deco-1{width:500px;height:500px;background:rgba(212,160,160,0.16);top:-100px;right:-100px}
+.bg-deco-2{width:400px;height:400px;background:rgba(201,169,110,0.1);bottom:-50px;left:-100px}
+
+header{position:relative;z-index:1;text-align:center;padding:48px 20px 32px;border-bottom:1px solid var(--border)}
+.header-eyebrow{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;letter-spacing:4px;color:var(--gold);margin-bottom:12px}
+h1{font-family:'Cormorant Garamond',serif;font-size:clamp(1.9rem,5vw,3.2rem);font-weight:300;color:var(--dark);line-height:1.15}
+h1 span{color:var(--gold);font-style:italic}
+.header-sub{margin-top:10px;color:var(--muted);font-size:0.85rem;font-weight:300;line-height:1.7}
+
+main{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:36px 20px 80px}
+
+/* STEPS */
+.steps{display:flex;align-items:center;justify-content:center;margin-bottom:36px;flex-wrap:wrap;gap:4px}
+.step{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);letter-spacing:0.3px;font-weight:300}
+.step.active{color:var(--brown)}.step.done{color:var(--gold)}
+.step-num{width:24px;height:24px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:12px;flex-shrink:0}
+.step-line{width:22px;height:1px;background:var(--border);margin:0 4px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeUp 0.4s ease}
+
+/* SECTION COMMON */
+.section-label{text-align:center;font-family:'Cormorant Garamond',serif;font-size:1.45rem;font-weight:300;color:var(--dark);margin-bottom:6px}
+.section-hint{text-align:center;color:var(--muted);font-size:0.8rem;margin-bottom:24px;line-height:1.6}
+.back-btn{display:flex;align-items:center;gap:5px;background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;margin-bottom:12px;font-family:'Noto Sans KR',sans-serif;transition:color 0.2s}
+.back-btn:hover{color:var(--brown)}
+
+/* GENDER */
+.gender-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:420px;margin:0 auto}
+.gender-card{background:var(--surface);border:2px solid var(--border);border-radius:20px;padding:28px 16px 22px;text-align:center;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;user-select:none}
+.gender-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.3s}
+.gender-card.female::before{background:radial-gradient(ellipse at 50% 0%,rgba(212,160,160,0.18),transparent 70%)}
+.gender-card.male::before{background:radial-gradient(ellipse at 50% 0%,rgba(122,158,192,0.18),transparent 70%)}
+.gender-card:hover{transform:translateY(-3px)}
+.gender-card.female:hover{border-color:var(--rose);box-shadow:0 12px 32px rgba(212,160,160,0.2)}
+.gender-card.male:hover{border-color:var(--blue);box-shadow:0 12px 32px rgba(122,158,192,0.2)}
+.gender-card:hover::before,.gender-card.selected::before{opacity:1}
+.gender-card.selected.female{border-color:var(--rose);background:rgba(255,240,240,0.85);box-shadow:0 8px 28px rgba(212,160,160,0.24)}
+.gender-card.selected.male{border-color:var(--blue);background:rgba(235,245,255,0.85);box-shadow:0 8px 28px rgba(122,158,192,0.24)}
+.gender-emoji{font-size:44px;margin-bottom:10px;display:block}
+.gender-label{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--dark)}
+.gender-sub{font-size:0.7rem;color:var(--muted);margin-top:4px;line-height:1.5}
+.check-mark{position:absolute;top:10px;right:10px;width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;opacity:0;transition:opacity 0.3s}
+.gender-card.selected.female .check-mark{background:var(--rose);color:white;opacity:1}
+.gender-card.selected.male .check-mark{background:var(--blue);color:white;opacity:1}
+.gender-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:16px;font-size:0.76rem;margin-bottom:14px}
+.gender-badge.female{background:rgba(212,160,160,0.14);border:1px solid rgba(212,160,160,0.4);color:#8a3a5a}
+.gender-badge.male{background:rgba(122,158,192,0.14);border:1px solid rgba(122,158,192,0.4);color:#2a5880}
+
+/* ── QUIZ SECTION ── */
+#quizSection{display:none}
+#quizSection.visible{display:block;animation:fadeUp 0.4s ease}
+.quiz-progress-wrap{margin-bottom:20px}
+.quiz-progress-bar{height:4px;background:var(--gold-light);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.quiz-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--rose));border-radius:2px;transition:width 0.4s ease}
+.quiz-progress-label{font-size:0.72rem;color:var(--muted);text-align:right}
+
+.quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;box-shadow:0 4px 20px rgba(0,0,0,0.05);max-width:560px;margin:0 auto}
+.quiz-q-num{font-size:0.7rem;color:var(--gold);letter-spacing:2px;margin-bottom:8px;font-family:'Cormorant Garamond',serif}
+.quiz-q-text{font-family:'Cormorant Garamond',serif;font-size:1.25rem;color:var(--dark);font-weight:300;line-height:1.4;margin-bottom:6px}
+.quiz-q-hint{font-size:0.75rem;color:var(--muted);margin-bottom:20px;line-height:1.5}
+
+.quiz-options{display:flex;flex-direction:column;gap:9px}
+.quiz-opt{display:flex;align-items:center;gap:12px;padding:13px 16px;border:1.5px solid var(--border);border-radius:14px;cursor:pointer;transition:all 0.22s;background:var(--surface);user-select:none}
+.quiz-opt:hover{border-color:var(--gold);background:var(--warm);transform:translateX(3px)}
+.quiz-opt.selected{border-color:var(--gold);background:linear-gradient(135deg,rgba(245,237,224,0.9),rgba(232,213,176,0.4));box-shadow:0 3px 12px rgba(201,169,110,0.18)}
+.quiz-opt-icon{font-size:22px;flex-shrink:0;width:32px;text-align:center}
+.quiz-opt-text{font-size:0.87rem;color:var(--text);line-height:1.4}
+.quiz-opt-sub{font-size:0.72rem;color:var(--muted);margin-top:2px}
+
+.quiz-nav{display:flex;gap:10px;margin-top:20px;max-width:560px;margin-left:auto;margin-right:auto}
+.btn-quiz-back{padding:12px 20px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;flex-shrink:0}
+.btn-quiz-back:hover{border-color:var(--gold);color:var(--brown)}
+.btn-quiz-next{flex:1;padding:13px;background:linear-gradient(135deg,var(--brown),#7a5040);color:var(--cream);border:none;border-radius:12px;font-size:0.9rem;font-family:'Cormorant Garamond',serif;letter-spacing:1px;cursor:pointer;transition:all 0.25s;box-shadow:0 5px 18px rgba(92,61,46,0.25)}
+.btn-quiz-next:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(92,61,46,0.35)}
+.btn-quiz-next:disabled{opacity:0.4;cursor:not-allowed}
+
+/* ── UPLOAD SECTION ── */
+#uploadSection{display:none}
+#uploadSection.visible{display:block;animation:fadeUp 0.4s ease}
+.photo-capture-area{max-width:420px;margin:0 auto}
+.capture-tabs{display:flex;gap:7px;margin-bottom:10px}
+.cap-tab{flex:1;padding:9px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:0.8rem;color:var(--muted);font-family:'Noto Sans KR',sans-serif;transition:all 0.22s;text-align:center}
+.cap-tab.active{background:var(--warm);border-color:var(--gold);color:var(--brown);font-weight:500}
+.upload-zone-wrap{position:relative;border-radius:20px;overflow:hidden;background:var(--surface);border:1.5px dashed var(--gold-light);transition:border-color 0.3s,box-shadow 0.3s}
+.upload-zone-wrap:hover{border-color:var(--gold);box-shadow:0 10px 36px rgba(201,169,110,0.13)}
+.upload-zone-wrap.dragover{border-color:var(--gold);background:rgba(245,237,224,0.9)}
+#cropCanvas{display:block;width:100%;cursor:grab;touch-action:none;border-radius:18px}
+#cropCanvas:active{cursor:grabbing}
+.canvas-placeholder{aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;padding:20px;text-align:center}
+.upload-icon-wrap{width:54px;height:54px;background:linear-gradient(135deg,var(--warm),var(--gold-light));border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 14px rgba(201,169,110,0.18);margin:0 auto}
+.upload-title{font-family:'Cormorant Garamond',serif;font-size:1.18rem;color:var(--dark)}
+.upload-desc{color:var(--muted);font-size:0.75rem;line-height:1.6}
+.oval-overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;padding-top:5%}
+.oval-overlay svg{width:54%}
+.oval-label{position:absolute;font-size:0.67rem;color:rgba(160,130,90,0.85);white-space:nowrap;letter-spacing:0.8px;pointer-events:none;bottom:28%;left:50%;transform:translateX(-50%)}
+@keyframes guideBreath{0%,100%{opacity:0.45}50%{opacity:0.85}}
+.breath{animation:guideBreath 2.5s ease-in-out infinite}
+.zoom-row{display:flex;align-items:center;gap:9px;margin:9px 0 7px;padding:0 2px}
+.zoom-label{font-size:0.7rem;color:var(--muted);white-space:nowrap}
+#zoomSlider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--gold-light);outline:none}
+#zoomSlider::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 2px 5px rgba(201,169,110,0.4)}
+.zoom-val{font-size:0.7rem;color:var(--brown);min-width:28px;text-align:right}
+#cameraWrap{display:none;position:relative;border-radius:18px;overflow:hidden;background:#000}
+#cameraVideo{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+#cameraOval{position:absolute;inset:0;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;padding-top:5%}
+#cameraOval svg{width:54%}
+.camera-label{position:absolute;font-size:0.67rem;color:rgba(255,255,255,0.75);white-space:nowrap;letter-spacing:0.8px;pointer-events:none;bottom:28%;left:50%;transform:translateX(-50%)}
+.upload-tips{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tip-badge{padding:4px 9px;background:var(--warm);border:1px solid var(--border);border-radius:14px;font-size:0.68rem;color:var(--brown)}
+#fileInput{display:none}
+
+/* BUTTONS */
+.btn-primary{display:block;width:100%;padding:16px;background:linear-gradient(135deg,var(--brown),#7a5040);color:var(--cream);border:none;border-radius:13px;font-size:0.97rem;font-family:'Cormorant Garamond',serif;font-weight:400;letter-spacing:2px;cursor:pointer;transition:all 0.3s;box-shadow:0 6px 22px rgba(92,61,46,0.26);margin-top:14px}
+.btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 30px rgba(92,61,46,0.36)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+.btn-secondary{display:block;width:100%;padding:11px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:12px;font-size:0.8rem;font-family:'Noto Sans KR',sans-serif;cursor:pointer;transition:all 0.25s;margin-top:7px}
+.btn-secondary:hover{border-color:var(--gold);color:var(--brown)}
+.btn-cam{padding:13px 18px;background:linear-gradient(135deg,#2a5880,#1a3a5a);color:white;border:none;border-radius:13px;font-size:0.86rem;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:9px;font-family:'Noto Sans KR',sans-serif}
+.btn-cam:hover{transform:translateY(-1px);box-shadow:0 7px 20px rgba(42,88,128,0.28)}
+
+/* ── ANALYSIS SECTION ── */
+#analysisSection{display:none}
+#analysisSection.visible{display:block;animation:fadeUp 0.4s ease}
+.analysis-layout{display:grid;grid-template-columns:240px 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:560px){.analysis-layout{grid-template-columns:1fr}}
+.photo-card-fixed{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.06);flex-shrink:0}
+.photo-frame{position:relative;width:100%;height:240px}
+@media(max-width:560px){.photo-frame{height:200px}}
+.photo-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.photo-frame-oval{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:5%;pointer-events:none}
+.photo-frame-oval svg{width:54%;opacity:0.4}
+.photo-card-footer{padding:9px 12px;text-align:center;font-size:0.73rem;color:var(--muted);border-top:1px solid var(--border)}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 4px 18px rgba(0,0,0,0.05)}
+
+/* Summary badges shown in step 3 */
+.summary-badges{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.sum-badge{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:11px;background:var(--warm);font-size:0.82rem;color:var(--brown)}
+.sum-badge-icon{font-size:18px;flex-shrink:0}
+.sum-badge strong{font-weight:500;margin-right:4px}
+
+/* Loading */
+.loading-state{display:flex;flex-direction:column;align-items:center;padding:36px 12px;gap:14px}
+.loader-ring{width:42px;height:42px;border-radius:50%;border:2px solid var(--gold-light);border-top-color:var(--gold);animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-steps{display:flex;flex-direction:column;gap:7px;text-align:center}
+.loading-steps span{font-size:0.76rem;color:var(--muted);letter-spacing:1px;opacity:0;animation:fadeIn 0.5s ease forwards}
+.loading-steps span:nth-child(1){animation-delay:0s}
+.loading-steps span:nth-child(2){animation-delay:1.8s}
+@keyframes fadeIn{to{opacity:1}}
+
+/* ── FACE SHAPE SELECTOR ── */
+.face-shape-picker{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:14px}
+.fsp-title{font-size:0.8rem;color:var(--muted);letter-spacing:1px;margin-bottom:10px}
+.fsp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:400px){.fsp-grid{grid-template-columns:repeat(2,1fr)}}
+.fsp-item{border:1.5px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;transition:all 0.22s;background:var(--warm)}
+.fsp-item:hover{border-color:var(--gold);transform:translateY(-2px)}
+.fsp-item.selected{border-color:var(--gold);background:linear-gradient(135deg,rgba(245,237,224,0.95),rgba(232,213,176,0.5));box-shadow:0 3px 12px rgba(201,169,110,0.22)}
+.fsp-emoji{font-size:26px;display:block;margin-bottom:4px}
+.fsp-name{font-size:0.72rem;color:var(--dark);font-weight:500}
+.fsp-desc{font-size:0.62rem;color:var(--muted);margin-top:2px;line-height:1.3}
+.ai-suggestion{display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--gold);background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);padding:3px 9px;border-radius:10px;margin-bottom:8px}
+
+/* ── RESULTS ── */
+#resultsSection{display:none}
+#resultsSection.visible{display:block;animation:fadeUp 0.5s ease}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+@media(max-width:560px){.results-grid{grid-template-columns:1fr}}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:17px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.05);transition:transform 0.3s,box-shadow 0.3s}
+.result-card:hover{transform:translateY(-2px);box-shadow:0 9px 32px rgba(0,0,0,0.08)}
+.result-card.wide{grid-column:1/-1}
+.rc-header{padding:13px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.rc-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.rc-icon.gold{background:linear-gradient(135deg,#f5ede0,var(--gold-light))}
+.rc-icon.rose{background:linear-gradient(135deg,#fde8e8,#f0c0c0)}
+.rc-icon.sage{background:linear-gradient(135deg,#e8f0e8,#c0d8c0)}
+.rc-icon.blue{background:linear-gradient(135deg,#e8f2fa,var(--blue-light))}
+.rc-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:400;color:var(--dark)}
+.rc-body{padding:14px 16px 16px}
+.season-badge{display:inline-block;padding:6px 15px;border-radius:24px;font-family:'Cormorant Garamond',serif;font-size:1.1rem;margin-bottom:9px;letter-spacing:0.8px}
+.season-spring{background:linear-gradient(135deg,#fff3e0,#ffe082);color:#7b5e00}
+.season-summer{background:linear-gradient(135deg,#fce4ec,#f8bbd0);color:#7b1a3a}
+.season-autumn{background:linear-gradient(135deg,#fbe9e7,#ffccbc);color:#7b3a1a}
+.season-winter{background:linear-gradient(135deg,#e8eaf6,#c5cae9);color:#1a237e}
+.detail-text{font-size:0.83rem;line-height:1.76;color:#5a4a3a;font-weight:300}
+.palette-row{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0}
+.swatch{width:27px;height:27px;border-radius:50%;border:2px solid rgba(255,255,255,0.8);box-shadow:0 2px 6px rgba(0,0,0,0.12);cursor:pointer;transition:transform 0.2s;position:relative}
+.swatch:hover{transform:scale(1.2)}
+.swatch-tip{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;color:var(--muted);opacity:0;transition:opacity 0.2s;pointer-events:none}
+.swatch:hover .swatch-tip{opacity:1}
+.face-shape-visual{display:flex;align-items:center;gap:10px;padding:10px;background:var(--warm);border-radius:10px;margin:6px 0}
+.face-shape-icon{font-size:30px}
+.hair-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:3px}
+@media(max-width:440px){.hair-grid{grid-template-columns:1fr 1fr}}
+.hair-card{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--warm);transition:all 0.25s}
+.hair-card:hover{border-color:var(--gold);box-shadow:0 4px 14px rgba(201,169,110,0.16)}
+.hair-card-img{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:36px;background:linear-gradient(135deg,var(--warm),var(--gold-light))}
+.hair-card-info{padding:7px 9px 9px}
+.hair-name{font-family:'Cormorant Garamond',serif;font-size:0.9rem;color:var(--dark);margin-bottom:2px}
+.hair-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.hair-tag{padding:1px 6px;border-radius:7px;font-size:0.63rem;background:rgba(201,169,110,0.13);color:var(--brown);border:1px solid rgba(201,169,110,0.22)}
+.hair-desc{font-size:0.69rem;color:var(--muted);line-height:1.45}
+.avoid-list{display:flex;flex-direction:column;gap:6px}
+.avoid-item{display:flex;align-items:flex-start;gap:6px;font-size:0.8rem;color:#7a5a4a;line-height:1.5}
+.avoid-item::before{content:'✕';color:var(--rose);flex-shrink:0}
+.error-box{text-align:center;padding:32px;color:#b85050;line-height:1.7}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:1.55rem;font-weight:300;color:var(--dark);margin-bottom:4px}
+.section-sub{font-size:0.8rem;color:var(--muted);margin-bottom:18px}
+.divider{border:none;border-top:1px solid var(--border);margin:28px 0}
+/* ── 이목구비 상세 ── */
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.feature-item{background:var(--warm);border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:8px}
+.feature-icon{font-size:18px;flex-shrink:0}
+.feature-label{font-size:0.68rem;color:var(--muted);margin-bottom:1px}
+.feature-val{font-size:0.8rem;color:var(--dark);font-weight:500}
+/* ── 귀끝~턱 길이 ── */
+.length-bar-wrap{margin:10px 0}
+.length-bar-track{height:8px;background:var(--gold-light);border-radius:4px;overflow:hidden;margin:5px 0}
+.length-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--rose));border-radius:4px;transition:width 1s ease}
+.length-rec{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.length-rec-badge{padding:4px 10px;border-radius:10px;font-size:0.72rem;font-weight:500}
+.rec-good{background:rgba(106,200,150,0.18);color:#2a7a50;border:1px solid rgba(106,200,150,0.35)}
+.rec-caution{background:rgba(212,160,100,0.18);color:#8a5a20;border:1px solid rgba(212,160,100,0.35)}
+.rec-avoid{background:rgba(212,100,100,0.18);color:#8a2020;border:1px solid rgba(212,100,100,0.35)}
+.volume-tip{margin-top:10px;padding:10px 12px;background:rgba(201,169,110,0.1);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;font-size:0.8rem;color:var(--brown);line-height:1.6}
+/* ── 연예인 카드 ── */
+.celeb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+@media(max-width:440px){.celeb-grid{grid-template-columns:1fr 1fr}}
+.celeb-card{background:var(--warm);border:1px solid var(--border);border-radius:13px;padding:12px 10px;text-align:center;transition:all 0.25s}
+.celeb-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 18px rgba(201,169,110,0.18)}
+.celeb-emoji{font-size:32px;margin-bottom:6px;display:block}
+.celeb-name{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--dark);margin-bottom:3px}
+.celeb-tags{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:4px}
+.celeb-tag{font-size:0.62rem;padding:1px 6px;border-radius:7px;background:rgba(201,169,110,0.14);color:var(--brown);border:1px solid rgba(201,169,110,0.22)}
+.celeb-reason{font-size:0.69rem;color:var(--muted);margin-top:4px;line-height:1.4}
+
+/* ── 결과 저장 버튼 ── */
+.btn-save-result{width:100%;max-width:420px;margin:14px auto 0;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:linear-gradient(135deg,#2a7a50,#1a5a38);color:white;border:none;border-radius:14px;font-size:0.92rem;font-family:'Cormorant Garamond',serif;letter-spacing:1.5px;cursor:pointer;transition:all 0.25s;box-shadow:0 5px 18px rgba(42,122,80,0.25)}
+.btn-save-result:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(42,122,80,0.38)}
+.btn-img-save{width:100%;max-width:420px;margin:8px auto 0;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:linear-gradient(135deg,var(--brown),#7a5040);color:var(--cream);border:none;border-radius:14px;font-size:0.88rem;font-family:'Cormorant Garamond',serif;letter-spacing:1px;cursor:pointer;transition:all 0.25s;box-shadow:0 5px 18px rgba(92,61,46,0.22)}
+.btn-img-save:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(92,61,46,0.35)}
+.save-toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(42,122,80,0.95);color:white;padding:11px 22px;border-radius:24px;font-size:0.84rem;opacity:0;transition:all 0.35s;z-index:9000;white-space:nowrap;backdrop-filter:blur(8px)}
+.save-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── 방문 기록 모달 ── */
+#recordsModal{position:fixed;inset:0;z-index:9980;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+#recordsModal.open{display:flex}
+.records-box{background:var(--cream);border-radius:20px;padding:0;max-width:680px;width:100%;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;max-height:90vh;display:flex;flex-direction:column}
+.records-header{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--cream);position:sticky;top:0}
+.records-title{font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--dark)}
+.records-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+.records-scroll{overflow-y:auto;padding:16px 22px 22px;flex:1}
+.record-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px;position:relative}
+.record-item:last-child{margin-bottom:0}
+.record-date{font-size:0.7rem;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.record-date-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.record-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.record-badge{font-size:0.72rem;padding:3px 10px;border-radius:10px;font-weight:500}
+.rb-color{background:linear-gradient(135deg,rgba(245,237,224,0.9),rgba(232,213,176,0.5));color:var(--brown);border:1px solid var(--border)}
+.rb-face{background:rgba(212,160,160,0.15);color:#7a3a5a;border:1px solid rgba(212,160,160,0.3)}
+.rb-gender{background:rgba(122,158,192,0.12);color:#2a5880;border:1px solid rgba(122,158,192,0.25)}
+.rb-length{background:rgba(106,200,150,0.12);color:#2a7a50;border:1px solid rgba(106,200,150,0.25)}
+.record-hairs{font-size:0.75rem;color:var(--brown);line-height:1.7;margin-bottom:6px}
+.record-del{position:absolute;top:10px;right:12px;background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;opacity:0.6;transition:opacity 0.2s;padding:2px 4px}
+.record-del:hover{opacity:1;color:#c05050}
+.records-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.85rem}
+.records-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.stat-box{text-align:center;padding:10px;background:var(--warm);border-radius:11px}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--gold);line-height:1}
+.stat-label{font-size:0.68rem;color:var(--muted);margin-top:3px}
+.records-btn-clear{padding:8px 16px;background:none;border:1px solid rgba(192,80,80,0.4);color:#c05050;border-radius:9px;font-size:0.76rem;cursor:pointer;transition:all 0.2s;font-family:'Noto Sans KR',sans-serif}
+.records-btn-clear:hover{background:rgba(192,80,80,0.08)}
+
+/* source tag */
+.source-tag{display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;padding:2px 8px;border-radius:8px;margin-left:6px}
+.source-quiz{background:rgba(106,200,150,0.15);color:#2a7a50;border:1px solid rgba(106,200,150,0.3)}
+.source-ai{background:rgba(122,158,192,0.15);color:#2a5880;border:1px solid rgba(122,158,192,0.3)}
+.source-user{background:rgba(201,169,110,0.15);color:var(--brown);border:1px solid rgba(201,169,110,0.3)}
+</style>
+</head>
+<body>
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+  <div class="lock-logo">
+    <div class="lock-logo-main">YOUNG N HAIR</div>
+    <div class="lock-logo-sub">S T U D I O</div>
+    <div class="lock-divider"></div>
+    <div class="lock-tagline">Personal Color &amp; Hair Style</div>
+  </div>
+  <div class="lock-card">
+    <div class="lock-title">🔐 입장 비밀번호를 입력하세요</div>
+    <div class="lock-input-wrap">
+      <input class="lock-input" id="lockInput" type="password" placeholder="비밀번호 입력" maxlength="20" onkeydown="if(event.key==='Enter')tryUnlock()">
+      <button class="lock-eye" id="lockEye" onclick="toggleLockEye()">👁</button>
+    </div>
+    <button class="lock-btn" onclick="tryUnlock()">✦ 입 장 ✦</button>
+    <div class="lock-error" id="lockError"></div>
+  </div>
+
+  <!-- API 키 안내 (관리자용, 평소엔 숨김) -->
+  <div id="apiKeyNotice" style="display:none;margin-top:18px;max-width:380px;width:100%;text-align:center">
+    <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);line-height:1.7">
+      ⚠️ AI 분석을 사용하려면 Anthropic API 키가 필요해요<br>
+      관리자 설정에서 API 키를 입력해주세요
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN BUTTON -->
+<button id="adminBtn" onclick="openAdmin()" title="관리자">⚙️</button>
+
+<!-- ADMIN MODAL -->
+<div id="adminModal">
+  <div class="admin-box">
+    <div class="admin-title">
+      ⚙️ 관리자 설정
+      <button class="admin-close" onclick="closeAdmin()">✕</button>
+    </div>
+
+    <!-- 1단계: 관리자 비밀번호 인증 -->
+    <div id="adminAuthWrap">
+      <div style="text-align:center;margin-bottom:16px;font-size:0.82rem;color:var(--muted)">관리자 전용 비밀번호를 입력해주세요</div>
+      <input class="admin-input" id="adminAuthPw" type="password" placeholder="관리자 비밀번호 입력" style="margin-bottom:0">
+      <div id="adminAuthError" style="font-size:0.75rem;color:#f08080;min-height:18px;margin:6px 0 10px;text-align:center"></div>
+      <button class="admin-save" style="width:100%" onclick="tryAdminAuth()">🔓 확인</button>
+    </div>
+
+    <!-- 2단계: 설정 패널 (인증 후 표시) -->
+    <div id="adminPanelWrap" style="display:none">
+
+      <!-- API 키 설정 -->
+      <div style="margin-bottom:18px;padding:14px;background:rgba(201,169,110,0.08);border:1px solid rgba(201,169,110,0.25);border-radius:12px">
+        <div style="font-size:0.78rem;color:var(--gold);font-weight:500;margin-bottom:8px">🔑 Anthropic API 키</div>
+        <input class="admin-input" id="adminApiKey" type="password" placeholder="sk-ant-api03-..." style="margin-bottom:6px;font-size:0.8rem;letter-spacing:1px">
+        <button class="admin-save" style="width:100%;padding:9px;font-size:0.82rem" onclick="saveApiKey()">💾 API 키 저장</button>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:7px;line-height:1.6">
+          현재: <span id="apiKeyStatus">미설정</span><br>
+          <a href="https://console.anthropic.com" target="_blank" style="color:var(--gold)">console.anthropic.com</a>에서 발급받으세요
+        </div>
+      </div>
+
+      <!-- 고객 비밀번호 변경 -->
+      <label class="admin-label">새 고객 입장 비밀번호</label>
+      <input class="admin-input" id="adminNewPw" type="password" placeholder="새 비밀번호 입력">
+      <label class="admin-label">비밀번호 확인</label>
+      <input class="admin-input" id="adminConfirmPw" type="password" placeholder="새 비밀번호 다시 입력">
+      <div class="admin-row">
+        <button class="admin-save" onclick="saveAdminPw()">💾 고객 비밀번호 변경</button>
+      </div>
+      <div class="admin-info">
+        💡 현재 고객 입장 비밀번호: <strong id="currentPwDisplay">···</strong><br>
+        변경하면 고객들은 새 비밀번호로 입장해요<br>
+        <span style="color:var(--gold)">관리자 비밀번호(220817)는 변경되지 않아요</span>
+      </div>
+      <button class="admin-save" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#2a5880,#1a3a60)" onclick="closeAdmin();openRecords()">📋 고객 방문 기록 보기</button>
+    </div>
+
+    <div class="admin-status" id="adminStatus"></div>
+    <!-- 숨겨진 현재비밀번호 필드 (호환성 유지) -->
+    <input id="adminCurrentPw" type="hidden">
+  </div>
+</div>
+
+<div class="bg-deco bg-deco-1"></div>
+<div class="bg-deco bg-deco-2"></div>
+
+<header>
+  <div class="header-eyebrow">✦ AI Beauty Analysis ✦</div>
+  <div style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.1rem,3.5vw,1.6rem);color:var(--gold);letter-spacing:4px;font-weight:300;margin-bottom:4px">YOUNG N HAIR STUDIO</div>
+  <h1>퍼스널컬러 &amp; <span>헤어스타일</span><br>AI 분석</h1>
+  <p class="header-sub">퀴즈로 정확한 퍼스널컬러 진단 + AI 얼굴형 분석으로<br>맞춤 헤어스타일을 추천받으세요</p>
+</header>
+
+<main>
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step active" id="step1"><div class="step-num">1</div><span>성별</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step2"><div class="step-num">2</div><span>머리길이</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step3"><div class="step-num">3</div><span>컬러진단</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step4"><div class="step-num">4</div><span>사진</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step5"><div class="step-num">5</div><span>AI 분석</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step6"><div class="step-num">6</div><span>결과</span></div>
+  </div>
+
+  <!-- STEP 1: GENDER -->
+  <div id="genderSection" class="fade-in">
+    <div class="section-label">성별을 선택해주세요</div>
+    <p class="section-hint">성별에 맞는 헤어스타일을 추천해드립니다</p>
+    <div class="gender-cards">
+      <div class="gender-card female" onclick="selectGender('female')">
+        <div class="check-mark">✓</div>
+        <span class="gender-emoji">👩</span>
+        <div class="gender-label">여성</div>
+        <div class="gender-sub">여성 헤어스타일 추천</div>
+      </div>
+      <div class="gender-card male" onclick="selectGender('male')">
+        <div class="check-mark">✓</div>
+        <span class="gender-emoji">👨</span>
+        <div class="gender-label">남성</div>
+        <div class="gender-sub">남성 헤어스타일 추천</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: HAIR LENGTH -->
+  <div id="hairLengthSection">
+    <button class="back-btn" onclick="goBack('hairLength')">← 성별 다시 선택</button>
+    <div id="genderBadgeWrapHL" style="text-align:center"></div>
+    <div class="section-label">원하는 머리 길이를 선택해주세요</div>
+    <p class="section-hint">선택한 길이 기준으로 헤어스타일을 추천해드려요</p>
+    <div class="hair-length-cards" id="hairLengthCards">
+      <div class="hl-card" onclick="selectHairLength('short')">
+        <div class="hl-check">✓</div>
+        <span class="hl-emoji">✂️</span>
+        <div class="hl-label">짧은 머리</div>
+        <div class="hl-desc">숏컷·단발·보브<br>귀~턱 위 길이</div>
+      </div>
+      <div class="hl-card" onclick="selectHairLength('long')">
+        <div class="hl-check">✓</div>
+        <span class="hl-emoji">💇</span>
+        <div class="hl-label">긴 머리</div>
+        <div class="hl-desc">미디엄·롱·웨이브<br>어깨 이하 길이</div>
+      </div>
+    </div>
+    <button class="btn-primary" id="btnHairLengthNext" style="max-width:440px;margin:0 auto;display:block;opacity:0.4;cursor:not-allowed" onclick="goToQuiz()" disabled>다음 →</button>
+  </div>
+
+  <!-- STEP 3: PERSONAL COLOR QUIZ -->
+  <div id="quizSection">
+    <button class="back-btn" onclick="goBack('quiz')">← 머리길이 다시 선택</button>
+    <div id="genderBadgeWrap" style="text-align:center"></div>
+    <div class="section-label">퍼스널컬러 진단</div>
+    <p class="section-hint">아래 질문에 솔직하게 답해주세요 · 직접 비교가 어려우면 더 가까운 쪽을 선택해요</p>
+
+    <div class="quiz-progress-wrap">
+      <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quizProgressFill" style="width:0%"></div></div>
+      <div class="quiz-progress-label" id="quizProgressLabel">0 / 9</div>
+    </div>
+
+    <div class="quiz-card" id="quizCard">
+      <!-- rendered by JS -->
+    </div>
+
+    <div class="quiz-nav">
+      <button class="btn-quiz-back" id="btnQuizBack" onclick="quizPrev()" style="display:none">← 이전</button>
+      <button class="btn-quiz-next" id="btnQuizNext" onclick="quizNext()" disabled>다음 →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: UPLOAD PHOTO -->
+  <div id="uploadSection">
+    <button class="back-btn" onclick="goBack('upload')">← 퍼스널컬러 다시 진단</button>
+    <div id="genderBadgeWrap2" style="text-align:center"></div>
+    <div class="section-label">정면 사진을 준비해주세요</div>
+    <p class="section-hint">타원 가이드에 얼굴을 맞춰주세요 · 드래그·핀치로 조절 가능</p>
+
+    <div class="photo-capture-area">
+      <div class="capture-tabs">
+        <div class="cap-tab active" id="tabUpload" onclick="switchTab('upload')">📁 사진 업로드</div>
+        <div class="cap-tab" id="tabCamera" onclick="switchTab('camera')">📷 카메라 촬영</div>
+      </div>
+
+      <div id="panelUpload">
+        <div class="upload-zone-wrap" id="uploadZoneWrap">
+          <canvas id="cropCanvas" style="display:none"></canvas>
+          <div class="canvas-placeholder" id="canvasPlaceholder" onclick="fileInput.click()">
+            <div class="upload-icon-wrap">🤳</div>
+            <div class="upload-title">클릭 또는 드래그</div>
+            <div class="upload-desc">정면 사진 업로드<br>밝은 조명 · 민낯 권장</div>
+          </div>
+          <div class="oval-overlay" id="ovalOverlay" style="display:none">
+            <svg viewBox="0 0 100 130" fill="none"><ellipse class="breath" cx="50" cy="62" rx="46" ry="58" stroke="rgba(201,169,110,0.75)" stroke-width="1.8" stroke-dasharray="6 4"/></svg>
+          </div>
+          <div class="oval-label" id="ovalLabel" style="display:none">얼굴을 여기에 맞춰주세요</div>
+        </div>
+        <div class="zoom-row" id="zoomRow" style="display:none">
+          <span class="zoom-label">🔍 크기</span>
+          <input type="range" id="zoomSlider" min="80" max="150" value="100" oninput="onZoom()">
+          <span class="zoom-val" id="zoomVal">100%</span>
+        </div>
+        <div class="upload-tips">
+          <span class="tip-badge">✓ 정면 촬영</span>
+          <span class="tip-badge">✓ 밝은 조명</span>
+          <span class="tip-badge">✓ 민낯 권장</span>
+          <span class="tip-badge">✓ 드래그로 위치 조절</span>
+        </div>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+
+      <div id="panelCamera" style="display:none">
+        <div id="cameraWrap" style="display:none">
+          <video id="cameraVideo" autoplay playsinline muted></video>
+          <div id="cameraOval"><svg viewBox="0 0 100 130" fill="none"><ellipse class="breath" cx="50" cy="62" rx="46" ry="58" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" stroke-dasharray="6 4"/></svg></div>
+          <div class="camera-label">얼굴을 타원에 맞춰주세요</div>
+        </div>
+        <canvas id="snapCanvas" style="display:none;width:100%;border-radius:18px"></canvas>
+        <button class="btn-cam" id="btnStartCam" onclick="startCamera()">📷 카메라 켜기</button>
+        <button class="btn-cam" id="btnSnap" onclick="takeSnap()" style="display:none;background:linear-gradient(135deg,var(--brown),#7a5040)">📸 촬영하기</button>
+        <button class="btn-cam" id="btnRetakeCam" onclick="retakeCamera()" style="display:none;background:linear-gradient(135deg,#556,#334)">↩ 다시 촬영</button>
+      </div>
+
+      <button class="btn-primary" id="btnNext" style="display:none" onclick="goToAnalysis()">✦ &nbsp; 다음 단계로 &nbsp; ✦</button>
+      <button class="btn-secondary" id="btnRedo" style="display:none" onclick="redoPhoto()">다른 사진으로 변경</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: ANALYSIS -->
+  <div id="analysisSection">
+    <div class="analysis-layout">
+      <div class="photo-card-fixed">
+        <div class="photo-frame">
+          <img id="analysisImg" src="" alt="분석 사진">
+          <div class="photo-frame-oval">
+            <svg viewBox="0 0 100 130" fill="none"><ellipse cx="50" cy="62" rx="46" ry="58" stroke="white" stroke-width="1.5" stroke-dasharray="5 4"/></svg>
+          </div>
+        </div>
+        <div class="photo-card-footer" id="analysisBadge"></div>
+      </div>
+      <div class="info-card" id="infoCard">
+        <!-- filled by JS -->
+      </div>
+    </div>
+    <button class="btn-primary" id="btnDoAnalysis" onclick="doAnalysis()">✦ &nbsp; AI 분석 시작하기 &nbsp; ✦</button>
+    <button class="btn-secondary" onclick="resetAll()">↩ 처음부터 다시하기</button>
+  </div>
+
+  <hr class="divider" id="divider" style="display:none">
+
+  <!-- STEP 5: RESULTS -->
+  <div id="resultsSection">
+    <div class="section-title">분석 결과</div>
+    <div class="section-sub" id="resultSubtitle"></div>
+    <div class="results-grid" id="resultsGrid"></div>
+    <!-- 결과 저장 버튼 -->
+    <div style="display:flex;flex-direction:column;align-items:center;margin-top:10px">
+      <button class="btn-save-result" onclick="saveRecord()">📋 &nbsp; 분석 결과 저장하기</button>
+      <button class="btn-img-save" onclick="saveResultImage()">🖼️ &nbsp; 결과 이미지로 저장하기</button>
+      <button class="btn-secondary" onclick="resetAll()" style="margin-top:8px;max-width:420px">↩ 처음부터 다시 분석하기</button>
+    </div>
+  </div>
+</main>
+
+<!-- 방문 기록 모달 -->
+<div id="recordsModal">
+  <div class="records-box">
+    <div class="records-header">
+      <div class="records-title">📋 고객 방문 기록</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="records-btn-clear" onclick="clearAllRecords()">전체 삭제</button>
+        <button class="records-close" onclick="closeRecords()">✕</button>
+      </div>
+    </div>
+    <div class="records-scroll" id="recordsScroll"></div>
+  </div>
+</div>
+
+<!-- 저장 토스트 -->
+<div class="save-toast" id="saveToast"></div>
+
+<script>
+/* ════════════════════════════════
+   STATE
+════════════════════════════════ */
+let gender = null;
+let hairLength = null;  // 'short' | 'long'
+let quizAnswers = {};   // {qIndex: optionIndex}
+let personalColorResult = null; // computed after quiz
+let finalB64 = null;
+let mimeType = 'image/jpeg';
+let aiFaceShape = null;   // from API
+let userFaceShape = null; // user override
+
+/* pan/zoom */
+let imgEl = new Image();
+let zoom = 100, baseScale = 1.0, panX = 0, panY = 0;
+let isDragging = false, lastX = 0, lastY = 0;
+let canvasW = 0, canvasH = 0;
+const cropCanvas = document.getElementById('cropCanvas');
+const ctx = cropCanvas.getContext('2d');
+const fileInput = document.getElementById('fileInput');
+
+/* ════════════════════════════════
+   STEPS
+════════════════════════════════ */
+function setStep(n){
+  for(let i=1;i<=6;i++){
+    const el=document.getElementById('step'+i);
+    if(!el) continue;
+    el.classList.remove('active','done');
+    if(i<n) el.classList.add('done');
+    else if(i===n) el.classList.add('active');
+  }
+}
+function show(id){ document.getElementById(id).style.display=''; document.getElementById(id).classList.add('visible'); }
+function hide(id){ const el=document.getElementById(id); el.style.display='none'; el.classList.remove('visible'); }
+
+/* ════════════════════════════════
+   QUIZ DATA  (14 questions)
+════════════════════════════════ */
+const QUIZ = [
+  // Q1 혈관색 ★★★★★ 가장 중요
+  {q:'손목 안쪽 혈관 색이 어떤가요?',
+   hint:'자연광 아래 손목 안쪽 — 파랑/보라 vs 초록/청록으로 구분해요. 가장 신뢰도 높은 지표예요.',
+   opts:[{icon:'💜',text:'파랑·보라·자주빛',sub:'쿨톤 핵심 신호'},{icon:'💚',text:'초록·청록·올리브빛',sub:'웜톤 핵심 신호'},{icon:'🤍',text:'파란지 초록인지 구분이 안 돼요',sub:'뉴트럴 신호'}],
+   scores:[{cool:5},{warm:5},{cool:1,warm:1}]},
+  // Q2 언더톤 ★★★★★
+  {q:'민낯 피부의 베이스 색이 어떤가요?',
+   hint:'세안 직후 자연광에서 확인 — 형광등은 부정확해요',
+   opts:[{icon:'🩷',text:'핑크·분홍·붉은빛이 돌아요',sub:'쿨톤 언더톤'},{icon:'🟡',text:'노란·황금·올리브빛이 돌아요',sub:'웜톤 언더톤'},{icon:'🍑',text:'복숭아·살구빛 — 핑크도 노랑도 아닌',sub:'뉴트럴'}],
+   scores:[{cool:5},{warm:5},{cool:1,warm:1}]},
+  // Q3 금은 ★★★★
+  {q:'금 vs 은 액세서리, 어느 쪽이 피부를 더 화사하게 만드나요?',
+   hint:'목걸이·귀걸이를 실제로 대보고 거울 확인 — 주관적 선호가 아닌 피부 반응으로 판단해요',
+   opts:[{icon:'🥈',text:'실버·화이트골드가 확실히 잘 어울려요',sub:'쿨톤'},{icon:'🥇',text:'골드·로즈골드가 확실히 잘 어울려요',sub:'웜톤'},{icon:'🤷',text:'둘 다 비슷해요',sub:'뉴트럴'}],
+   scores:[{cool:4},{warm:4},{cool:1,warm:1}]},
+  // Q4 흰색 vs 아이보리 ★★★★
+  {q:'새하얀 흰색 vs 크림·아이보리, 어느 옷이 더 잘 어울리나요?',
+   hint:'천을 얼굴 바로 옆에 대고 비교 — 피부가 더 맑아 보이는 쪽',
+   opts:[{icon:'🤍',text:'새하얀 화이트 쪽이 훨씬 잘 어울려요',sub:'쿨톤'},{icon:'🌕',text:'크림·아이보리 쪽이 훨씬 잘 어울려요',sub:'웜톤'},{icon:'😐',text:'둘 다 비슷해요',sub:'뉴트럴'}],
+   scores:[{cool:4},{warm:4},{cool:1,warm:1}]},
+  // Q5 햇빛 반응 ★★★
+  {q:'햇빛(자외선)에 피부가 어떻게 반응하나요?',
+   hint:'야외 활동 평균 경험',
+   opts:[{icon:'🔴',text:'쉽게 빨개지고 잘 안 타요',sub:'쿨톤 경향'},{icon:'🟫',text:'빨개졌다가 골든브라운으로 서서히 타요',sub:'웜톤 경향'},{icon:'⚡',text:'거의 안 빨개지고 바로 타거나 반응 없어요',sub:'딥톤 경향'}],
+   scores:[{cool:3},{warm:3},{deep:2}]},
+  // Q6 피부 명도 ★★★
+  {q:'한국인 평균 기준, 피부 밝기가 어느 정도인가요?',
+   hint:'주변 한국인 지인들과 비교했을 때',
+   opts:[{icon:'☀️',text:'밝은 편 (흰 피부)',sub:'라이트'},{icon:'🌤️',text:'중간 정도',sub:'미디엄'},{icon:'🌑',text:'어두운 편',sub:'딥'}],
+   scores:[{light:4},{mid:2},{deep:4}]},
+  // Q7 피부 채도 ★★★
+  {q:'피부 전체의 느낌이 어떤가요?',
+   hint:'맑고 선명한지, 은은하고 차분한지',
+   opts:[{icon:'✨',text:'맑고 투명하고 선명해요',sub:'브라이트·클리어'},{icon:'🌫️',text:'은은하고 차분하고 뮤트해요',sub:'소프트·뮤트'},{icon:'💫',text:'선명하지도 뮤트하지도 않은 중간',sub:'미디엄 채도'}],
+   scores:[{clear:4},{mute:4},{clear:1,mute:1}]},
+  // Q8 자연 모발색 ★★★
+  {q:'염색 전 본래 머리카락 색이 어떤가요?',
+   hint:'태어날 때부터 가진 자연 모발색',
+   opts:[{icon:'⬛',text:'블루블랙·짙고 푸른 기 있는 검정',sub:'쿨딥 신호'},{icon:'🖤',text:'순수한 검정 (붉은기·푸른기 없음)',sub:'쿨/뉴트럴'},{icon:'🟫',text:'갈색 기 섞인 검정·소프트블랙',sub:'웜 신호'},{icon:'🔶',text:'붉은기·구릿빛 섞인 검정',sub:'웜딥 신호'}],
+   scores:[{cool:3,deep:1},{cool:2},{warm:3},{warm:3,deep:1}]},
+  // Q9 립 컬러 ★★★
+  {q:'바르면 가장 자연스럽고 화사해 보이는 립 컬러는?',
+   hint:'화장품 매장 테스트 경험 또는 실제로 잘 어울렸던 색',
+   opts:[{icon:'💜',text:'버건디·와인·모브·자주',sub:'쿨딥 계열'},{icon:'🧡',text:'코랄·오렌지·브릭레드',sub:'웜브라이트 계열'},{icon:'🩷',text:'베이비핑크·로즈핑크·누드핑크',sub:'쿨라이트 계열'},{icon:'🍂',text:'누드브라운·테라코타·카멜베이지',sub:'웜뮤트·딥 계열'}],
+   scores:[{cool:4,deep:2},{warm:4,clear:1},{cool:4,light:2},{warm:3,deep:1,mute:2}]},
+  // Q10 블러셔 색 ★★★
+  {q:'바르면 가장 자연스러운 블러셔(볼터치) 색은?',
+   hint:'메이크업 안 하는 분은 어떤 계열이 더 어울릴 것 같은지 상상해보세요',
+   opts:[{icon:'🌸',text:'쿨핑크·로즈·라이트핑크',sub:'쿨라이트'},{icon:'🍊',text:'코랄·피치·오렌지',sub:'웜브라이트'},{icon:'🍇',text:'모브·와인·쿨베이지',sub:'쿨뮤트·딥'},{icon:'🍁',text:'테라코타·브라운·웜베이지',sub:'웜뮤트·딥'}],
+   scores:[{cool:3,light:2},{warm:3,clear:1},{cool:3,mute:2},{warm:3,mute:2}]},
+  // Q11 어울리는 의상 색 계열 ★★★
+  {q:'입었을 때 가장 칭찬받는 의상 색 계열은?',
+   hint:'실제로 주변 사람들이 "오늘 잘 어울린다" 했던 경험',
+   opts:[{icon:'🔵',text:'라이트블루·퍼플·쿨핑크·라벤더',sub:'쿨라이트'},{icon:'🟠',text:'코랄·옐로우·피치·오렌지',sub:'웜브라이트'},{icon:'🟢',text:'올리브·카키·테라코타·머스타드',sub:'웜뮤트·딥'},{icon:'⚫',text:'블랙·딥네이비·버건디·다크퍼플',sub:'쿨딥'}],
+   scores:[{cool:3,light:1},{warm:3,clear:1},{warm:3,mute:2},{cool:3,deep:2}]},
+  // Q12 눈 색 ★★
+  {q:'눈동자(홍채) 색이 어떤가요?',
+   hint:'검정에 가까울수록 딥톤, 갈색 계열은 웜톤 신호',
+   opts:[{icon:'🖤',text:'칠흑같이 진한 검정',sub:'쿨딥 신호'},{icon:'🟤',text:'짙은 갈색·초콜릿',sub:'웜 신호'},{icon:'🔵',text:'옅은 갈색·허니·헤이즐',sub:'웜라이트 신호'},{icon:'🌑',text:'검정인데 빛에 약간 갈색빛이 돌아요',sub:'웜뮤트 신호'}],
+   scores:[{cool:3,deep:1},{warm:3},{warm:2,light:1},{warm:2,mute:1}]},
+  // Q13 피부 톤 균일도 ★★
+  {q:'피부 톤이 균일한 편인가요?',
+   hint:'트러블·잡티·홍조 등 제외하고 전반적인 피부톤의 균일함',
+   opts:[{icon:'🪞',text:'전반적으로 고르고 균일해요',sub:'클리어 신호'},{icon:'🌈',text:'약간 불균일하거나 붉은기·노란기가 섞여요',sub:'뮤트 신호'},{icon:'💎',text:'하얗고 맑지만 약간 차가운 느낌',sub:'쿨라이트 신호'}],
+   scores:[{clear:3},{mute:2},{cool:2,light:1,clear:1}]},
+  // Q14 계절 느낌 ★★
+  {q:'자신의 분위기·느낌이 어떤 계절과 가장 잘 어울리나요?',
+   hint:'외모 분위기가 가장 닮은 계절 — 주관적 느낌 OK',
+   opts:[{icon:'🌸',text:'봄 — 밝고 화사하고 생기있는',sub:'봄웜 신호'},{icon:'🌊',text:'여름 — 시원하고 맑고 우아한',sub:'여름쿨 신호'},{icon:'🍂',text:'가을 — 깊고 따뜻하고 고급스러운',sub:'가을웜 신호'},{icon:'❄️',text:'겨울 — 선명하고 강하고 세련된',sub:'겨울쿨 신호'}],
+   scores:[{warm:2,light:1},{cool:2,light:1},{warm:2,deep:1,mute:1},{cool:2,deep:1,clear:1}]},
+];
+
+/* ════════════════════════════════
+   PERSONAL COLOR ENGINE — 12타입
+════════════════════════════════ */
+function computePersonalColor(){
+  const t={warm:0,cool:0,light:0,deep:0,mid:0,clear:0,mute:0};
+  Object.entries(quizAnswers).forEach(([qi,oi])=>{
+    const sc=QUIZ[qi].scores[oi]||{};
+    Object.entries(sc).forEach(([k,v])=>{ t[k]=(t[k]||0)+v; });
+  });
+
+  const W=t.warm, C=t.cool, diff=W-C;
+  // 5점 이상 차이: 명확한 웜/쿨
+  // 2~4점: 약한 경향
+  // 1점 이하: 뉴트럴
+  const isWarm    = diff >= 5;
+  const leanWarm  = diff >= 2 && diff < 5;
+  const isNeutral = Math.abs(diff) < 2;
+  const leanCool  = diff <= -2 && diff > -5;
+  const isCool    = diff <= -5;
+
+  const isLight   = t.light > t.deep + 1;
+  const isDeep    = t.deep > t.light + 1;
+  const isMid     = !isLight && !isDeep;
+
+  const isClear   = t.clear > t.mute + 1;
+  const isMute    = t.mute > t.clear + 1;
+  const isMidSat  = !isClear && !isMute;
+
+  // 최종 웜/쿨 결정 (뉴트럴은 계절 Q14 + 립 Q9 로 가중치 추가 판단)
+  const effectWarm = isWarm || leanWarm || (isNeutral && diff >= 0);
+  const effectCool = isCool || leanCool || (isNeutral && diff < 0);
+
+  let season, subtype, chars, bestColors, colorNames, avoidColors, hairColorRec, pcCelebs=[];
+
+  /* ─────────── 봄웜 3타입 ─────────── */
+  if(effectWarm && !isDeep && isClear){
+    season='봄웜'; subtype='봄웜 브라이트 (Spring Bright)';
+    chars='맑고 선명하며 따뜻한 피부톤이에요. 비비드한 코랄·살몬·퍼키옐로우처럼 생기넘치는 웜컬러가 가장 잘 어울려요. 대비가 있는 선명한 컬러도 소화 가능한 타입이에요.';
+    bestColors=['#FF6B35','#FF8C42','#FFC107','#FF5E7E','#2EC4B6','#FFBE0B'];
+    colorNames=['버닝오렌지','웜오렌지','앰버옐로우','코랄핑크','브라이트민트','선플라워'];
+    avoidColors=['차콜·슬레이트그레이','딥퍼플·바이올렛','콜드네이비'];
+    hairColorRec='허니블론드·골든카라멜·선플라워옐로우가 잘 어울려요. 차가운 애쉬 계열은 피해요.';
+    pcCelebs=['아이유 (밝고 선명한 웜톤)','손예진 (코랄핑크 피부)','김태리 (생기있는 봄웜)'];
+  } else if(effectWarm && !isDeep && isMute){
+    season='봄웜'; subtype='봄웜 라이트 (Spring Light)';
+    chars='밝고 따뜻하지만 은은한 피부톤이에요. 너무 강렬한 색보다 피치·라이트코랄·아이보리처럼 부드럽고 따뜻한 파스텔 계열이 자연스럽게 어울려요.';
+    bestColors=['#FFDAB9','#FFE4E1','#FAEBD7','#F5DEB3','#E6CCAA','#FFE0B2'];
+    colorNames=['피치','미스티로즈','안티크화이트','웜베이지','카멜크림','라이트피치'];
+    avoidColors=['콜드퓨어화이트','다크차콜','강한퍼플'];
+    hairColorRec='피치베이지·내추럴브라운·소프트카라멜이 잘 어울려요.';
+    pcCelebs=['박보영 (밝고 부드러운 봄웜)','문가영 (소프트 웜톤)','수지 (따뜻한 라이트톤)'];
+  } else if(effectWarm && !isDeep){
+    season='봄웜'; subtype='봄웜 트루 (Spring True)';
+    chars='생기있고 따뜻한 피부톤의 클래식 봄웜이에요. 복숭아·산호·연한 옐로우그린 등 봄꽃처럼 화사한 컬러가 잘 어울려요.';
+    bestColors=['#FF7F50','#FFDAB9','#98FB98','#FFD700','#FFA07A','#FFFACD'];
+    colorNames=['코랄','피치','민트그린','골든옐로우','살몬','레몬쉬폰'];
+    avoidColors=['차콜그레이','콜드블루','딥버건디'];
+    hairColorRec='골든브라운·코퍼·허니블론드가 잘 어울려요. 애쉬계열은 피해요.';
+    pcCelebs=['전지현 (클래식 봄웜)','김윤아 (따뜻한 코랄톤)','송혜교 (내추럴 웜톤)'];
+
+  /* ─────────── 가을웜 3타입 ─────────── */
+  } else if(effectWarm && isDeep && isMute){
+    season='가을웜'; subtype='가을웜 뮤트 (Autumn Muted)';
+    chars='깊고 차분한 어스톤 피부톤이에요. 테라코타·올리브·머스타드처럼 대지의 색이 가장 자연스럽게 어울려요. 너무 선명하거나 차가운 색은 피해요.';
+    bestColors=['#8B6914','#A0522D','#6B6B2A','#7B3F00','#808000','#8B4513'];
+    colorNames=['다크골드','시에나','올리브드랍','초콜릿','올리브','새들브라운'];
+    avoidColors=['파스텔핑크·베이비핑크','차가운라벤더','형광·네온'];
+    hairColorRec='딥초콜릿브라운·올리브브라운·다크오번이 잘 어울려요.';
+    pcCelebs=['이나영 (차분한 가을웜)','한지민 (뮤트한 어스톤)','박신혜 (소프트 가을톤)'];
+  } else if(effectWarm && isDeep && isClear){
+    season='가을웜'; subtype='가을웜 스트롱 (Autumn Strong)';
+    chars='깊고 선명한 웜 피부톤이에요. 딥테라코타·버릭레드·다크올리브처럼 강렬하고 풍부한 어스톤이 잘 어울려요.';
+    bestColors=['#C0392B','#D35400','#8E44AD','#27AE60','#2C3E50','#E67E22'];
+    colorNames=['딥레드','버닝오렌지','딥퍼플','포레스트그린','다크슬레이트','탠저린'];
+    avoidColors=['베이비핑크·파스텔','실버계열','형광계열'];
+    hairColorRec='딥오번·다크체스트넛·마호가니가 잘 어울려요.';
+    pcCelebs=['김희선 (선명한 가을웜)','고소영 (강한 어스톤)','이보영 (딥웜 계열)'];
+  } else if(effectWarm && isDeep){
+    season='가을웜'; subtype='가을웜 딥 (Autumn Deep)';
+    chars='깊고 따뜻한 어스톤 피부의 클래식 가을웜이에요. 테라코타·카멜·딥올리브 등 자연스럽고 깊은 색이 고급스럽게 어울려요.';
+    bestColors=['#8B4513','#D2691E','#B8860B','#556B2F','#A0522D','#CD853F'];
+    colorNames=['새들브라운','초콜릿오렌지','다크골든','다크올리브','시에나','페루'];
+    avoidColors=['파스텔핑크','차가운라벤더·퍼플','형광계열'];
+    hairColorRec='다크초콜릿·오번·딥카라멜이 잘 어울려요. 밝은 애쉬는 피해요.';
+    pcCelebs=['신민아 (깊은 가을웜)','한가인 (딥한 어스톤)','이민정 (클래식 가을딥)'];
+
+  /* ─────────── 여름쿨 3타입 ─────────── */
+  } else if(effectCool && !isDeep && isMute){
+    season='여름쿨'; subtype='여름쿨 뮤트 (Summer Muted)';
+    chars='차분하고 부드러운 쿨 피부톤이에요. 파우더블루·라벤더·로즈처럼 은은하고 뮤트한 쿨 컬러가 우아하게 어울려요. 선명하거나 강한 색은 피해요.';
+    bestColors=['#B0C4DE','#D8BFD8','#C8A2C8','#AFEEEE','#DDA0DD','#B0E0E6'];
+    colorNames=['파우더블루','시슬','라일락','페일터쿼이즈','플럼','파우더블루'];
+    avoidColors=['오렌지·테라코타','강한옐로우','머스타드'];
+    hairColorRec='애쉬브라운·쿨베이지·소프트블랙이 잘 어울려요. 골든·레드계열은 피해요.';
+    pcCelebs=['김태희 (차분한 쿨뮤트)','손나은 (소프트 쿨톤)','임수정 (우아한 여름쿨)'];
+  } else if(effectCool && !isDeep && isClear){
+    season='여름쿨'; subtype='여름쿨 브라이트 (Summer Bright)';
+    chars='밝고 맑은 쿨 피부톤이에요. 로즈핑크·스카이블루처럼 선명하고 시원한 쿨 컬러가 화사하게 어울려요.';
+    bestColors=['#FF69B4','#87CEEB','#E6E6FA','#98D8C8','#DDA0DD','#4169E1'];
+    colorNames=['핫핑크','스카이블루','라벤더','아쿠아민트','플럼','로얄블루'];
+    avoidColors=['오렌지','카멜·머스타드','테라코타'];
+    hairColorRec='쿨베이지·소프트애쉬블론드·라이트그레이가 잘 어울려요.';
+    pcCelebs=['아이린 (밝은 쿨톤)','설현 (선명한 여름쿨)','정소미 (브라이트 쿨)'];
+  } else if(effectCool && !isDeep){
+    season='여름쿨'; subtype='여름쿨 트루 (Summer True)';
+    chars='우아하고 차가운 클래식 여름쿨이에요. 로즈·라벤더·소프트블루처럼 차갑고 부드러운 파스텔이 잘 어울려요.';
+    bestColors=['#FFB6C1','#B0C4DE','#DDA0DD','#C8A2C8','#E6E6FA','#87CEEB'];
+    colorNames=['라이트핑크','스틸블루','플럼','라일락','라벤더','스카이블루'];
+    avoidColors=['오렌지','카멜','따뜻한머스타드'];
+    hairColorRec='애쉬브라운·쿨베이지·소프트로즈골드가 잘 어울려요.';
+    pcCelebs=['한소희 (클래식 여름쿨)','장원영 (트루 쿨톤)','카리나 (우아한 쿨계열)'];
+
+  /* ─────────── 겨울쿨 3타입 ─────────── */
+  } else if(effectCool && isDeep && isMute){
+    season='겨울쿨'; subtype='겨울쿨 딥 (Winter Deep)';
+    chars='깊고 차가운 피부톤이에요. 딥네이비·버건디·차콜처럼 어둡고 선명한 쿨 컬러가 세련되게 어울려요.';
+    bestColors=['#000080','#8B0000','#4B0082','#2F4F4F','#191970','#696969'];
+    colorNames=['네이비','딥레드','인디고','다크슬레이트','미드나잇블루','딤그레이'];
+    avoidColors=['아이보리·크림','따뜻한오렌지','밝은파스텔'];
+    hairColorRec='블루블랙·딥에스프레소·차콜이 잘 어울려요. 따뜻한 브라운·골든은 피해요.';
+    pcCelebs=['윤아 (딥한 겨울쿨)','고준희 (딥쿨 계열)','한효주 (어두운 쿨톤)'];
+  } else if(effectCool && isDeep && isClear){
+    season='겨울쿨'; subtype='겨울쿨 브라이트 (Winter Bright)';
+    chars='선명하고 강렬한 쿨 피부톤이에요. 비비드한 쿨 컬러나 블랙&화이트 강한 대비가 가장 잘 어울리는 타입이에요.';
+    bestColors=['#FF1493','#0000CD','#FF0000','#4B0082','#006400','#00BFFF'];
+    colorNames=['딥핑크','미디엄블루','레드','인디고','다크그린','딥스카이블루'];
+    avoidColors=['아이보리','오렌지·카멜','뮤트·소프트계열'];
+    hairColorRec='블루블랙·픽시블랙·딥에스프레소가 잘 어울려요. 따뜻한 브라운은 피해요.';
+    pcCelebs=['이하늬 (선명한 겨울쿨)','이성경 (브라이트 쿨)','수영 (비비드 쿨톤)'];
+  } else {
+    season='겨울쿨'; subtype='겨울쿨 트루 (Winter True)';
+    chars='차갑고 선명한 클래식 겨울쿨이에요. 퓨어화이트·블랙·아이시블루처럼 강렬한 대비와 선명한 쿨 컬러가 가장 잘 어울려요.';
+    bestColors=['#000000','#FFFFFF','#0047AB','#8B0000','#4B0082','#006400'];
+    colorNames=['블랙','퓨어화이트','코발트블루','크림슨','인디고','포레스트그린'];
+    avoidColors=['아이보리·베이지','오렌지·카멜','머스타드·올리브'];
+    hairColorRec='블루블랙·차콜·딥에스프레소가 잘 어울려요. 따뜻한 브라운·레드는 피해요.';
+    pcCelebs=['전소미 (클래식 겨울쿨)','조이 (트루 쿨톤)','사나 (강렬한 겨울쿨)'];
+  }
+
+  return {season,subtype,skinTone:'퀴즈 기반 진단',characteristics:chars,
+    bestColors,colorNames,avoidColors,hairColorRec,pcCelebs:(typeof pcCelebs!=='undefined'?pcCelebs:[]),quizBased:true,
+    _dbg:{W,C,diff,light:t.light,deep:t.deep,clear:t.clear,mute:t.mute}};
+}
+
+/* ════════════════════════════════
+   QUIZ UI
+════════════════════════════════ */
+let currentQ = 0;
+
+function renderQuiz(){
+  const q=QUIZ[currentQ];
+  const pct=Math.round((currentQ/QUIZ.length)*100);
+  document.getElementById('quizProgressFill').style.width=pct+'%';
+  document.getElementById('quizProgressLabel').textContent=`${currentQ} / ${QUIZ.length}`;
+
+  const selected=quizAnswers[currentQ];
+  const optsHtml=q.opts.map((o,i)=>`
+    <div class="quiz-opt${selected===i?' selected':''}" onclick="selectOpt(${i})">
+      <div class="quiz-opt-icon">${o.icon}</div>
+      <div>
+        <div class="quiz-opt-text">${o.text}</div>
+        <div class="quiz-opt-sub">${o.sub}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('quizCard').innerHTML=`
+    <div class="quiz-q-num">Q${currentQ+1} / ${QUIZ.length}</div>
+    <div class="quiz-q-text">${q.q}</div>
+    <div class="quiz-q-hint">${q.hint}</div>
+    <div class="quiz-options">${optsHtml}</div>`;
+
+  const btn=document.getElementById('btnQuizNext');
+  btn.disabled=(selected===undefined);
+  btn.textContent=currentQ===QUIZ.length-1?'진단 완료 ✦':'다음 →';
+  document.getElementById('btnQuizBack').style.display=currentQ>0?'':'none';
+}
+
+function selectOpt(i){
+  quizAnswers[currentQ]=i;
+  document.querySelectorAll('.quiz-opt').forEach((el,idx)=>el.classList.toggle('selected',idx===i));
+  document.getElementById('btnQuizNext').disabled=false;
+}
+
+function quizNext(){
+  if(quizAnswers[currentQ]===undefined) return;
+  if(currentQ<QUIZ.length-1){
+    currentQ++;
+    renderQuiz();
+  } else {
+    // Done — compute personal color
+    personalColorResult=computePersonalColor();
+    // move to upload
+    hide('quizSection');
+    showUploadSection();
+  }
+}
+
+function quizPrev(){
+  if(currentQ>0){ currentQ--; renderQuiz(); }
+}
+
+/* ════════════════════════════════
+   GENDER
+════════════════════════════════ */
+function selectGender(g){
+  gender=g;
+  document.querySelectorAll('.gender-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelector('.gender-card.'+g).classList.add('selected');
+  setTimeout(()=>{
+    hide('genderSection');
+    const badge='<span class="gender-badge '+g+'">'+(g==='female'?'👩 여성 분석 모드':'👨 남성 분석 모드')+'</span>';
+    document.getElementById('genderBadgeWrapHL').innerHTML=badge;
+    // 머리길이 선택에서 성별에 따라 카드 이모지 업데이트
+    const emoji1=g==='female'?'✂️':'✂️';
+    const emoji2=g==='female'?'💇‍♀️':'💇‍♂️';
+    document.querySelector('#hairLengthCards .hl-card:nth-child(1) .hl-emoji').textContent=emoji1;
+    document.querySelector('#hairLengthCards .hl-card:nth-child(2) .hl-emoji').textContent=emoji2;
+    document.querySelectorAll('.hl-card').forEach(el=>el.classList.remove('selected'));
+    hairLength=null;
+    const btn=document.getElementById('btnHairLengthNext');
+    btn.disabled=true; btn.style.opacity='0.4'; btn.style.cursor='not-allowed';
+    show('hairLengthSection');
+    setStep(2);
+  },200);
+}
+
+function selectHairLength(len){
+  hairLength=len;
+  document.querySelectorAll('.hl-card').forEach(el=>el.classList.remove('selected'));
+  const idx=len==='short'?0:1;
+  document.querySelectorAll('.hl-card')[idx].classList.add('selected');
+  const btn=document.getElementById('btnHairLengthNext');
+  btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
+}
+
+function goToQuiz(){
+  if(!hairLength) return;
+  hide('hairLengthSection');
+  const badge='<span class="gender-badge '+(gender||'female')+'">'+(gender==='female'?'👩 여성':'👨 남성')+' · '+(hairLength==='short'?'✂️ 짧은 머리':'💇 긴 머리')+'</span>';
+  document.getElementById('genderBadgeWrap').innerHTML=badge;
+  show('quizSection');
+  currentQ=0; quizAnswers={};
+  renderQuiz();
+  setStep(3);
+}
+
+/* ════════════════════════════════
+   UPLOAD
+════════════════════════════════ */
+function showUploadSection(){
+  const badge=`<span class="gender-badge ${gender}">${gender==='female'?'👩 여성':'👨 남성'} · ${personalColorResult.season}</span>`;
+  document.getElementById('genderBadgeWrap2').innerHTML=badge;
+  show('uploadSection');
+  setStep(4);
+}
+
+const uploadZoneWrap=document.getElementById('uploadZoneWrap');
+uploadZoneWrap.addEventListener('click',e=>{ if(!imgEl.complete||!imgEl.src) fileInput.click(); });
+fileInput.addEventListener('change',e=>{ if(e.target.files[0]) loadImageFile(e.target.files[0]); });
+uploadZoneWrap.addEventListener('dragover',e=>{ e.preventDefault(); uploadZoneWrap.classList.add('dragover'); });
+uploadZoneWrap.addEventListener('dragleave',()=>uploadZoneWrap.classList.remove('dragover'));
+uploadZoneWrap.addEventListener('drop',e=>{ e.preventDefault(); uploadZoneWrap.classList.remove('dragover'); if(e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]); });
+
+function loadImageFile(file){
+  if(!file.type.startsWith('image/')) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{ imgEl=new Image(); imgEl.onload=()=>{ initCanvas(); showPhotoControls(); }; imgEl.src=ev.target.result; };
+  reader.readAsDataURL(file);
+}
+
+function initCanvas(){
+  canvasW=uploadZoneWrap.clientWidth||360;
+  canvasH=Math.round(canvasW*(4/3));
+  cropCanvas.width=canvasW; cropCanvas.height=canvasH;
+  cropCanvas.style.display='block'; cropCanvas.style.height=canvasH+'px';
+  document.getElementById('canvasPlaceholder').style.display='none';
+  const scale=Math.max(canvasW/imgEl.width,canvasH/imgEl.height);
+  baseScale=scale; zoom=100;
+  panX=(canvasW-imgEl.width*scale)/2;
+  panY=(canvasH-imgEl.height*scale)/2;
+  document.getElementById('zoomSlider').value=100;
+  document.getElementById('zoomVal').textContent='100%';
+  drawCanvas();
+  document.getElementById('ovalOverlay').style.display='';
+  document.getElementById('ovalLabel').style.display='';
+  document.getElementById('zoomRow').style.display='';
+}
+
+function drawCanvas(){
+  ctx.clearRect(0,0,canvasW,canvasH);
+  const s=baseScale*(zoom/100);
+  ctx.drawImage(imgEl,panX,panY,imgEl.width*s,imgEl.height*s);
+  finalB64=cropCanvas.toDataURL('image/jpeg',0.88).split(',')[1];
+  mimeType='image/jpeg';
+}
+
+function onZoom(){
+  const newZoom=parseInt(document.getElementById('zoomSlider').value);
+  const cx=canvasW/2,cy=canvasH/2;
+  const oldS=baseScale*(zoom/100),newS=baseScale*(newZoom/100);
+  panX=cx-(cx-panX)*(newS/oldS); panY=cy-(cy-panY)*(newS/oldS);
+  zoom=newZoom;
+  document.getElementById('zoomVal').textContent=newZoom+'%';
+  drawCanvas();
+}
+
+cropCanvas.addEventListener('mousedown',e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; cropCanvas.style.cursor='grabbing'; });
+window.addEventListener('mousemove',e=>{ if(!isDragging) return; panX+=e.clientX-lastX; panY+=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY; drawCanvas(); });
+window.addEventListener('mouseup',()=>{ isDragging=false; cropCanvas.style.cursor='grab'; });
+
+let lastTouch=null,lastDist=null;
+cropCanvas.addEventListener('touchstart',e=>{ e.preventDefault(); if(e.touches.length===1){lastTouch=e.touches[0];}else if(e.touches.length===2){lastDist=touchDist(e.touches);} },{passive:false});
+cropCanvas.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(e.touches.length===1&&lastTouch){ const t=e.touches[0]; panX+=t.clientX-lastTouch.clientX; panY+=t.clientY-lastTouch.clientY; lastTouch=t; drawCanvas(); }
+  else if(e.touches.length===2){ const d=touchDist(e.touches); if(lastDist){ const ratio=d/lastDist; const nz=Math.max(80,Math.min(150,zoom*ratio)); const cx=(e.touches[0].clientX+e.touches[1].clientX)/2,cy=(e.touches[0].clientY+e.touches[1].clientY)/2; const rect=cropCanvas.getBoundingClientRect(); const lx=cx-rect.left,ly=cy-rect.top; const oldS=baseScale*(zoom/100),newS=baseScale*(nz/100); panX=lx-(lx-panX)*(newS/oldS); panY=ly-(ly-panY)*(newS/oldS); zoom=nz; drawCanvas(); document.getElementById('zoomSlider').value=Math.round(zoom); document.getElementById('zoomVal').textContent=Math.round(zoom)+'%'; } lastDist=d; }
+},{passive:false});
+cropCanvas.addEventListener('touchend',()=>{ lastTouch=null; lastDist=null; });
+function touchDist(t){ return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY); }
+
+/* CAMERA */
+let stream=null;
+function switchTab(tab){
+  document.getElementById('tabUpload').classList.toggle('active',tab==='upload');
+  document.getElementById('tabCamera').classList.toggle('active',tab==='camera');
+  document.getElementById('panelUpload').style.display=tab==='upload'?'':'none';
+  document.getElementById('panelCamera').style.display=tab==='camera'?'':'none';
+  if(tab!=='camera') stopCamera();
+}
+async function startCamera(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:720},height:{ideal:960}},audio:false});
+    const v=document.getElementById('cameraVideo'); v.srcObject=stream; v.play();
+    document.getElementById('cameraWrap').style.display='';
+    document.getElementById('btnStartCam').style.display='none';
+    document.getElementById('btnSnap').style.display='';
+  }catch(e){ alert('카메라 접근 권한이 필요합니다.\n('+e.message+')'); }
+}
+function takeSnap(){
+  const v=document.getElementById('cameraVideo'),sc=document.getElementById('snapCanvas');
+  sc.width=v.videoWidth||480; sc.height=v.videoHeight||640;
+  sc.getContext('2d').drawImage(v,0,0);
+  finalB64=sc.toDataURL('image/jpeg',0.88).split(',')[1]; mimeType='image/jpeg';
+  stopCamera(); sc.style.display='block';
+  document.getElementById('btnSnap').style.display='none';
+  document.getElementById('btnRetakeCam').style.display='';
+  showPhotoControls();
+}
+function retakeCamera(){ document.getElementById('snapCanvas').style.display='none'; document.getElementById('btnRetakeCam').style.display='none'; finalB64=null; hidePhotoControls(); startCamera(); }
+function stopCamera(){ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;} document.getElementById('cameraWrap').style.display='none'; document.getElementById('btnStartCam').style.display=''; document.getElementById('btnSnap').style.display='none'; }
+function showPhotoControls(){ document.getElementById('btnNext').style.display='block'; document.getElementById('btnRedo').style.display='block'; }
+function hidePhotoControls(){ document.getElementById('btnNext').style.display='none'; document.getElementById('btnRedo').style.display='none'; }
+function clearPhoto(){ finalB64=null; zoom=100; baseScale=1.0; panX=0; panY=0; if(imgEl)imgEl.src=''; ctx.clearRect(0,0,canvasW,canvasH); cropCanvas.style.display='none'; document.getElementById('canvasPlaceholder').style.display=''; document.getElementById('ovalOverlay').style.display='none'; document.getElementById('ovalLabel').style.display='none'; document.getElementById('zoomRow').style.display='none'; document.getElementById('snapCanvas').style.display='none'; fileInput.value=''; hidePhotoControls(); }
+function redoPhoto(){ clearPhoto(); stopCamera(); }
+
+/* STEP 3 → 4 */
+function goToAnalysis(){
+  if(!finalB64){ alert('사진을 먼저 준비해주세요.'); return; }
+  document.getElementById('analysisImg').src='data:'+mimeType+';base64,'+finalB64;
+  const gc=gender==='female'?'#a04060':'#2a5880';
+  document.getElementById('analysisBadge').innerHTML=`<span style="color:${gc}">${gender==='female'?'👩 여성':'👨 남성'} · ${personalColorResult.season}</span>`;
+
+  // Populate info card with quiz summary + face shape picker
+  document.getElementById('infoCard').innerHTML=`
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--dark);margin-bottom:10px">분석 준비 완료</div>
+    <div class="summary-badges">
+      <div class="sum-badge"><div class="sum-badge-icon">🎨</div><div><strong>퍼스널컬러</strong>${personalColorResult.season} (${personalColorResult.subtype}) <span class="source-tag source-quiz">✓ 퀴즈진단</span></div></div>
+      <div class="sum-badge"><div class="sum-badge-icon">${gender==='female'?'💇‍♀️':'💇‍♂️'}</div><div><strong>성별</strong>${gender==='female'?'여성':'남성'}</div></div>
+    </div>
+    <div style="margin-top:14px;font-size:0.8rem;color:var(--muted)">AI가 얼굴형을 분석합니다. 분석 후 직접 수정도 가능해요.</div>`;
+
+  hide('uploadSection'); stopCamera();
+  document.getElementById('analysisSection').style.display='block';
+  document.getElementById('analysisSection').classList.add('visible');
+  setStep(5);
+}
+
+/* ════════════════════════════════
+   API — FACE SHAPE ONLY
+════════════════════════════════ */
+async function doAnalysis(){
+  if(!finalB64){ alert('사진 데이터가 없습니다.'); return; }
+  const btn=document.getElementById('btnDoAnalysis');
+  btn.disabled=true; btn.innerHTML='분석 중...';
+
+  document.getElementById('infoCard').innerHTML=`
+    <div class="loading-state">
+      <div class="loader-ring"></div>
+      <div class="loading-steps">
+        <span>💎 얼굴형 분석 중...</span>
+        <span>${gender==='female'?'💇‍♀️':'💇‍♂️'} 헤어스타일 계산 중...</span>
+      </div>
+    </div>`;
+
+  const gKo=gender==='female'?'여성':'남성';
+  const pc=personalColorResult;
+  const shortFemale='단발컷, 보브컷, 허쉬컷, 리프컷, 댄디컷, C컬단발, 웨이브단발, 픽시컷';
+  const longFemale='레이어드컷, 볼륨펌, 바디웨이브, 히피펌, S컬펌, 리얼퍼머, 스트레이트롱, C컬롱';
+  const shortMale='투블럭, 리프컷, 크롭컷, 언더컷, 슬릭백숏, 버즈컷, 텍스처드숏, 프렌치컷';
+  const longMale='슬릭백, 텍스처드펌, 포마드롱, 사이드파트, 울프컷, 커튼헤어, 레이어드남성롱';
+  const hairEx=gender==='female'
+    ?(hairLength==='short'?shortFemale:longFemale)
+    :(hairLength==='short'?shortMale:longMale);
+  const lengthGuide=hairLength==='short'?'반드시 귀~턱 위 길이의 짧은 스타일 3가지를 추천해주세요':'반드시 어깨 이하 길이의 긴 스타일 3가지를 추천해주세요';
+
+  // 프롬프트를 변수로 구성해 이스케이프 문제 방지
+  const jsonSchema = [
+    '{',
+    '  "faceShape":{"type":"계란형|둥근형|긴형|각진형|하트형|다이아몬드형","emoji":"🥚|🔵|📏|🟦|🫀|💎","description":"얼굴형특징2문장","features":"이목구비한줄요약"},',
+    '  "features":{"eyes":"눈크기·간격·길이 예:크고간격넓은긴눈","nose":"코길이·높이·너비 예:짧고낮은코","lips":"입술두께·크기 예:도톰한입술","jawline":"턱선특징 예:V턱","overall":"전체 이목구비가 주는 인상을 상세히: 이목구비 조화도, 주는 느낌(귀여움/시원함/강함/부드러움/청순함/섹시함 등), 첫인상, 특징적인 매력 포인트 2-3문장으로 작성"},',
+    '  "jawToEar":{"lengthEstimate":"짧다(5cm이하)|보통(5-7cm)|길다(7cm이상)","bobRecommend":"매우적합|적합|보통|부적합","bobReason":"단발어울림이유","longHairNote":"장발장단점","volumePosition":"볼륨위치와이유","noVolumeNote":"볼륨없는스타일적합여부"},',
+    '  "foreheadChin":{',
+    '    "foreheadWidth":"이마넓이: 넓다|보통|좁다",',
+    '    "foreheadHeight":"이마높이(길이): 높다|보통|낮다",',
+    '    "chinWidth":"하관넓이: 넓다|보통|좁다",',
+    '    "chinLength":"하관(턱끝까지)길이: 길다|보통|짧다",',
+    '    "faceRatio":"이마:하관 비율 특징 — 예: 이마넓고하관좁은역삼각,균형잡힌비율,하관이넓은사각",',
+    '    "bangRecommend":"앞머리 추천: 내리는앞머리|올리는앞머리|사이드앞머리|앞머리없음|본인선택",',
+    '    "bangReason":"앞머리 추천 이유 — 이마넓이·높이·하관넓이 기반으로 구체적으로",',
+    '    "bangStyleDetail":"구체적인 앞머리 스타일 제안 — 예: 가볍게내린시스루앞머리,두꺼운블런트앞머리,긴사이드스윕앞머리"',
+    '  },',
+    '  "hairStyles":[',
+    '    {"name":"스타일명","emoji":"💇","length":"숏|미디엄숏|미디엄|롱","volume":"볼륨설명","description":"설명","whyGood":"어울리는이유","tags":["t1","t2","t3"]},',
+    '    {"name":"스타일명","emoji":"✂️","length":"숏|미디엄숏|미디엄|롱","volume":"볼륨설명","description":"설명","whyGood":"어울리는이유","tags":["t1","t2","t3"]},',
+    '    {"name":"스타일명","emoji":"🌊","length":"숏|미디엄숏|미디엄|롱","volume":"볼륨설명","description":"설명","whyGood":"어울리는이유","tags":["t1","t2","t3"]}',
+    '  ],',
+    '  "avoidHair":["피할스타일1","피할스타일2","피할스타일3"],',
+    '  "celebrities":[',
+    '    {"name":"연예인명","emoji":"⭐","reason":"닮은이유(얼굴형+이목구비+컬러공통점)","tags":["특징1","특징2"]},',
+    '    {"name":"연예인명","emoji":"✨","reason":"닮은이유","tags":["특징1","특징2"]},',
+    '    {"name":"연예인명","emoji":"💫","reason":"닮은이유","tags":["특징1","특징2"]}',
+    '  ],',
+    '  "overallTip":"종합뷰티조언2문장"',
+    '}'
+  ].join('\n');
+
+  const prompt = [
+    '이 ' + gKo + '의 얼굴 사진을 전문 뷰티 컨설턴트처럼 분석해주세요. ' + lengthGuide + '.',
+    '퍼스널컬러 ' + pc.season + '(' + pc.subtype + ')는 이미 확정. 얼굴형/이목구비/헤어 분석만 하세요.',
+    '',
+    '규칙: 마크다운 없이 순수 JSON만 출력. 백틱 금지. 주석 금지.',
+    '',
+    '출력 형식:',
+    jsonSchema,
+    '',
+    gKo + ' 헤어 예시(' + (hairLength==='short'?'짧은머리':'긴머리') + '): ' + hairEx,
+    '연예인은 한국 연예인 위주, 실제 비슷한 특징 가진 인물만.',
+  ].join('\n');
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:(()=>{ const h={'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}; const k=getApiKey(); if(k) h['x-api-key']=k; return h; })(),
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:3000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mimeType,data:finalB64}},
+          {type:'text',text:prompt}
+        ]}]
+      })
+    });
+    if(!res.ok){
+      const e=await res.json().catch(()=>({}));
+      throw new Error('API '+res.status+': '+(e?.error?.message||res.statusText));
+    }
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    if(!data.content||!data.content.length) throw new Error('응답이 비어있습니다');
+    const raw=data.content.map(i=>i.text||'').join('').trim();
+    // JSON 추출 — 백틱/마크다운 제거 후 파싱
+    const cleaned=raw.replace(/```json|```/g,'').trim();
+    const m=cleaned.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('JSON을 찾을 수 없습니다. 응답: '+cleaned.slice(0,200));
+    let aiResult;
+    try{ aiResult=JSON.parse(m[0]); }
+    catch(pe){ throw new Error('JSON 파싱 오류: '+pe.message+' / 원문: '+m[0].slice(0,200)); }
+    aiFaceShape=aiResult.faceShape;
+    userFaceShape=null;
+    renderResults(aiResult);
+  }catch(err){
+    const msg = err.message||'알 수 없는 오류';
+    document.getElementById('infoCard').innerHTML=
+      '<div class="error-box">'
+      +'<div style="font-size:1rem;font-weight:500;margin-bottom:8px">⚠️ AI 분석 오류</div>'
+      +'<div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;word-break:break-all">'+msg+'</div>'
+      +'<div style="font-size:0.8rem;color:var(--brown)">아래에서 얼굴형을 직접 선택하면<br>AI가 해당 얼굴형 기준으로 다시 분석해요</div>'
+      +'</div>';
+    btn.disabled=false; btn.innerHTML='↺ 다시 시도하기';
+    showManualFacePicker(null);
+  }
+}
+
+/* ════════════════════════════════
+   FACE SHAPE PICKER (inline)
+════════════════════════════════ */
+const FACE_SHAPES=[
+  {type:'계란형',emoji:'🥚',desc:'이상적인 비율'},
+  {type:'둥근형',emoji:'🔵',desc:'볼이 넓고 부드러운'},
+  {type:'긴형',emoji:'📏',desc:'이마~턱 길이가 긴'},
+  {type:'각진형',emoji:'🟦',desc:'턱선이 각지고 강한'},
+  {type:'하트형',emoji:'🫀',desc:'이마 넓고 턱이 좁은'},
+  {type:'다이아몬드형',emoji:'💎',desc:'광대가 가장 넓은'},
+];
+
+function showManualFacePicker(aiSuggestion){
+  const suggestBadge=aiSuggestion
+    ?`<div style="margin-bottom:8px"><span class="ai-suggestion">🤖 AI 추천: ${aiSuggestion.emoji} ${aiSuggestion.type}</span></div>`
+    :'';
+  const items=FACE_SHAPES.map(f=>`
+    <div class="fsp-item${(userFaceShape||aiFaceShape?.type)===f.type?' selected':''}" onclick="selectFaceShape('${f.type}')">
+      <span class="fsp-emoji">${f.emoji}</span>
+      <div class="fsp-name">${f.type}</div>
+      <div class="fsp-desc">${f.desc}</div>
+    </div>`).join('');
+
+  const existing=document.getElementById('facePickerWrap');
+  if(existing) existing.remove();
+
+  const wrap=document.createElement('div');
+  wrap.id='facePickerWrap';
+  wrap.innerHTML=`
+    <div class="face-shape-picker">
+      <div class="fsp-title">💎 얼굴형 확인 · 수정</div>
+      ${suggestBadge}
+      <div class="fsp-grid">${items}</div>
+    </div>`;
+  // 결과 섹션이 보이면 거기에, 아니면 분석 섹션 아래에 붙임
+  const targetSection = document.getElementById('resultsSection').classList.contains('visible')
+    ? document.getElementById('resultsSection')
+    : document.getElementById('analysisSection');
+  targetSection.appendChild(wrap);
+}
+
+function selectFaceShape(type){
+  userFaceShape=type;
+  document.querySelectorAll('.fsp-item').forEach(el=>{
+    el.classList.toggle('selected', el.querySelector('.fsp-name').textContent===type);
+  });
+
+  const resultsRendered = document.getElementById('resultsGrid').innerHTML.trim() !== '';
+  if(resultsRendered){
+    // 결과가 이미 있으면 얼굴형 카드만 업데이트
+    updateFaceShapeInResults();
+  } else {
+    // 결과 없음 → AI 분석을 다시 시도 (선택한 얼굴형 힌트 포함)
+    doAnalysisWithFaceHint(type);
+  }
+}
+
+async function doAnalysisWithFaceHint(faceHint){
+  if(!finalB64){ alert('사진 데이터가 없습니다.'); return; }
+
+  // 얼굴형 선택 카드 로딩 표시
+  document.querySelectorAll('.fsp-item').forEach(el=>el.style.pointerEvents='none');
+  const selectedCard = document.querySelector('.fsp-item.selected');
+  if(selectedCard) selectedCard.innerHTML += '<div style="font-size:0.7rem;color:var(--gold);margin-top:4px">🔄 AI 분석 중...</div>';
+
+  const gKo=gender==='female'?'여성':'남성';
+  const pc=personalColorResult;
+  const shortFemale='단발컷, 보브컷, 허쉬컷, 리프컷, 댄디컷, C컬단발, 웨이브단발, 픽시컷';
+  const longFemale='레이어드컷, 볼륨펌, 바디웨이브, 히피펌, S컬펌, 리얼퍼머, 스트레이트롱, C컬롱';
+  const shortMale='투블럭, 리프컷, 크롭컷, 언더컷, 슬릭백숏, 버즈컷, 텍스처드숏, 프렌치컷';
+  const longMale='슬릭백, 텍스처드펌, 포마드롱, 사이드파트, 울프컷, 커튼헤어, 레이어드남성롱';
+  const hairEx=gender==='female'?(hairLength==='short'?shortFemale:longFemale):(hairLength==='short'?shortMale:longMale);
+  const lengthGuide=hairLength==='short'?'반드시 귀~턱 위 길이의 짧은 스타일 3가지를 추천해주세요':'반드시 어깨 이하 길이의 긴 스타일 3가지를 추천해주세요';
+
+  const jsonSchema = [
+    '{',
+    '  "faceShape":{"type":"계란형|둥근형|긴형|각진형|하트형|다이아몬드형","emoji":"🥚|🔵|📏|🟦|🫀|💎","description":"얼굴형특징2문장","features":"이목구비한줄요약"},',
+    '  "features":{"eyes":"눈크기·간격·길이 예:크고간격넓은긴눈","nose":"코길이·높이·너비 예:짧고낮은코","lips":"입술두께·크기 예:도톰한입술","jawline":"턱선특징 예:V턱","overall":"전체 이목구비가 주는 인상을 상세히: 이목구비 조화도, 주는 느낌(귀여움/시원함/강함/부드러움/청순함/섹시함 등), 첫인상, 특징적인 매력 포인트 2-3문장으로 작성"},',
+    '  "jawToEar":{"lengthEstimate":"짧다(5cm이하)|보통(5-7cm)|길다(7cm이상)","bobRecommend":"매우적합|적합|보통|부적합","bobReason":"단발어울림이유","longHairNote":"장발장단점","volumePosition":"볼륨위치와이유","noVolumeNote":"볼륨없는스타일적합여부"},',
+    '  "foreheadChin":{"foreheadWidth":"이마넓이: 넓다|보통|좁다","foreheadHeight":"이마높이(길이): 높다|보통|낮다","chinWidth":"하관넓이: 넓다|보통|좁다","chinLength":"하관(턱끝까지)길이: 길다|보통|짧다","faceRatio":"이마:하관 비율 특징","bangRecommend":"앞머리 추천: 내리는앞머리|올리는앞머리|사이드앞머리|앞머리없음|본인선택","bangReason":"앞머리 추천 이유","bangStyleDetail":"구체적인 앞머리 스타일 제안"},',
+    '  "hairStyles":[',
+    '    {"name":"스타일명","emoji":"💇","length":"숏|미디엄숏|미디엄|롱","volume":"볼륨설명","description":"설명","whyGood":"어울리는이유","tags":["t1","t2","t3"]},',
+    '    {"name":"스타일명","emoji":"✂️","length":"숏|미디엄숏|미디엄|롱","volume":"볼륨설명","description":"설명","whyGood":"어울리는이유","tags":["t1","t2","t3"]},',
+    '    {"name":"스타일명","emoji":"🌊","length":"숏|미디엄숏|미디엄|롱","volume":"볼륨설명","description":"설명","whyGood":"어울리는이유","tags":["t1","t2","t3"]}',
+    '  ],',
+    '  "avoidHair":["피할스타일1","피할스타일2","피할스타일3"],',
+    '  "celebrities":[',
+    '    {"name":"연예인명","emoji":"⭐","reason":"닮은이유(얼굴형+이목구비+컬러공통점)","tags":["특징1","특징2"]},',
+    '    {"name":"연예인명","emoji":"✨","reason":"닮은이유","tags":["특징1","특징2"]},',
+    '    {"name":"연예인명","emoji":"💫","reason":"닮은이유","tags":["특징1","특징2"]}',
+    '  ],',
+    '  "overallTip":"종합뷰티조언2문장"',
+    '}'
+  ].join('\n');
+
+  const prompt = [
+    '이 ' + gKo + '의 얼굴 사진을 전문 뷰티 컨설턴트처럼 분석해주세요. ' + lengthGuide + '.',
+    '퍼스널컬러 ' + pc.season + '(' + pc.subtype + ')는 이미 확정. 얼굴형/이목구비/헤어 분석만 하세요.',
+    '※ 사용자가 직접 선택한 얼굴형: ' + faceHint + ' — 이 얼굴형을 faceShape.type에 반드시 사용하고, 이 얼굴형에 맞는 헤어스타일을 추천해주세요.',
+    '',
+    '규칙: 마크다운 없이 순수 JSON만 출력. 백틱 금지. 주석 금지.',
+    '',
+    '출력 형식:',
+    jsonSchema,
+    '',
+    gKo + ' 헤어 예시(' + (hairLength==='short'?'짧은머리':'긴머리') + '): ' + hairEx,
+    '연예인은 한국 연예인 위주, 실제 비슷한 특징 가진 인물만.',
+  ].join('\n');
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:(()=>{ const h={'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}; const k=getApiKey(); if(k) h['x-api-key']=k; return h; })(),
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:3000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mimeType,data:finalB64}},
+          {type:'text',text:prompt}
+        ]}]
+      })
+    });
+    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error('API '+res.status+': '+(e?.error?.message||res.statusText)); }
+    const data=await res.json();
+    if(!data.content||!data.content.length) throw new Error('응답이 비어있습니다');
+    const raw=data.content.map(i=>i.text||'').join('').trim();
+    const cleaned=raw.replace(/```json|```/g,'').trim();
+    const m=cleaned.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('JSON을 찾을 수 없습니다');
+    const aiResult=JSON.parse(m[0]);
+    // 사용자가 선택한 얼굴형으로 강제 설정
+    aiResult.faceShape = aiResult.faceShape || {};
+    const fs = FACE_SHAPES.find(f=>f.type===faceHint);
+    if(fs){ aiResult.faceShape.type=fs.type; aiResult.faceShape.emoji=fs.emoji; }
+    aiFaceShape=aiResult.faceShape;
+    // userFaceShape 유지 (직접선택 뱃지 표시)
+    renderResults(aiResult);
+  }catch(err){
+    // AI 실패 시 기존 synthetic 방식으로 폴백
+    document.querySelectorAll('.fsp-item').forEach(el=>el.style.pointerEvents='');
+    const fs=FACE_SHAPES.find(f=>f.type===faceHint);
+    const gKo2=gender==='female'?'여성':'남성';
+    const fallbackStyles=gender==='female'
+      ?[{name:'레이어드컷',emoji:'💇‍♀️',length:'미디엄',volume:'자연스러운 볼륨',description:'층층이 레이어가 얼굴 윤곽을 살려줘요',whyGood:'얼굴 윤곽을 부드럽게 감싸줘요',tags:['자연스러운','여성스러운','일상']},{name:'볼륨펌',emoji:'🌊',length:'미디엄숏',volume:'풍성한 볼륨',description:'웨이브 볼륨으로 얼굴 볼륨 밸런스를 맞춰요',whyGood:'얼굴 너비와 볼륨의 균형을 맞춰줘요',tags:['볼륨감','부드러운','귀여운']},{name:'히피펌',emoji:'✂️',length:'롱',volume:'자유로운 웨이브',description:'자연스럽고 자유로운 웨이브 스타일',whyGood:'얼굴선을 부드럽게 감싸줘요',tags:['자연스러운','보헤미안','감성']}]
+      :[{name:'투블럭',emoji:'💇‍♂️',length:'숏',volume:'측면 타이트, 상단 볼륨',description:'측면 짧고 상단에 볼륨감 있는 남성 기본 스타일',whyGood:'얼굴 윤곽을 깔끔하게 정돈해줘요',tags:['깔끔한','남성적','직장인']},{name:'슬릭백',emoji:'✂️',length:'미디엄숏',volume:'뒤로 빗은 자연스러운',description:'이마를 드러내 세련되고 성숙한 느낌',whyGood:'이마를 드러내 얼굴 비율을 개선해요',tags:['세련된','포멀','성숙한']},{name:'텍스처드컷',emoji:'🌊',length:'숏',volume:'자연스러운 텍스처',description:'자연스러운 질감으로 편안한 느낌',whyGood:'얼굴 윤곽을 자연스럽게 살려줘요',tags:['내추럴','캐주얼','편안한']}];
+    renderResults({faceShape:fs,hairStyles:fallbackStyles,avoidHair:['앞머리로 이마 완전 가리기','너무 짧은 올백 스타일','얼굴 윤곽을 완전히 가리는 스타일'],overallTip:gKo2+'의 '+faceHint+'에 맞는 헤어스타일 추천이에요.'});
+  }
+  document.querySelectorAll('.fsp-item').forEach(el=>el.style.pointerEvents='');
+}
+
+function updateFaceShapeInResults(){
+  const fs=FACE_SHAPES.find(f=>f.type===userFaceShape);
+  if(!fs) return;
+  const card=document.getElementById('faceShapeCard');
+  if(card) card.innerHTML=buildFaceShapeCardBody(fs,true);
+}
+
+function buildFaceShapeCardBody(fs,isUser){
+  const tag=isUser?`<span class="source-tag source-user">✏️ 직접선택</span>`:`<span class="source-tag source-ai">🤖 AI분석</span>`;
+  const pc=personalColorResult;
+  return `
+    <div class="face-shape-visual">
+      <div class="face-shape-icon">${fs.emoji}</div>
+      <div><div style="font-family:'Cormorant Garamond',serif;font-size:1.22rem;color:var(--dark)">${fs.type} ${tag}</div>
+        <div style="font-size:0.73rem;color:var(--muted);margin-top:1px">${fs.desc||''}</div></div>
+    </div>
+    <p class="detail-text" style="margin-top:8px">${fs.description||''}</p>
+    <div style="margin-top:10px;padding:10px;background:var(--warm);border-radius:10px">
+      <div style="font-size:0.72rem;color:var(--gold);letter-spacing:1px;margin-bottom:4px">✦ 추천 헤어 컬러</div>
+      <p class="detail-text">${pc.hairColorRec}</p>
+    </div>`;
+}
+
+/* ════════════════════════════════
+   BANG CARD HELPER
+════════════════════════════════ */
+function buildBangCard(fc){
+  if(!fc || !fc.bangRecommend){
+    return '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:20px">분석 데이터 없음</div>';
+  }
+  const bangColorMap = {'내리는앞머리':'rec-good','사이드앞머리':'rec-good','앞머리없음':'rec-caution','올리는앞머리':'rec-caution','본인선택':'rec-caution'};
+  const bangIconMap  = {'내리는앞머리':'⬇️','올리는앞머리':'⬆️','사이드앞머리':'↗️','앞머리없음':'✖️','본인선택':'🤷'};
+  const bc = bangColorMap[fc.bangRecommend] || 'rec-caution';
+  const bi = bangIconMap[fc.bangRecommend]  || '💇';
+  const rows = [
+    ['👆','이마 넓이', fc.foreheadWidth||'-'],
+    ['📏','이마 높이', fc.foreheadHeight||'-'],
+    ['👇','하관 넓이', fc.chinWidth||'-'],
+    ['📐','하관 길이', fc.chinLength||'-'],
+  ];
+  const grid = rows.map(([ico,lbl,val])=>
+    '<div class="feature-item"><div class="feature-icon">'+ico+'</div>'
+    +'<div><div class="feature-label">'+lbl+'</div>'
+    +'<div class="feature-val">'+val+'</div></div></div>'
+  ).join('');
+  const styleDetail = fc.bangStyleDetail
+    ? '<div class="volume-tip" style="margin-top:7px">\u2702\ufe0f <strong>구체적 스타일:</strong> '+fc.bangStyleDetail+'</div>'
+    : '';
+  return ''
+    +'<div class="feature-grid" style="grid-template-columns:1fr 1fr;margin-bottom:10px">'+grid+'</div>'
+    +'<div style="padding:9px 12px;background:var(--warm);border-radius:10px;margin-bottom:9px;font-size:0.79rem;color:var(--brown)">'
+    +'\u2696\ufe0f '+( fc.faceRatio||'' )+'</div>'
+    +'<div class="length-rec" style="margin-bottom:8px">'
+    +'<span class="length-rec-badge '+bc+'">'+bi+' 추천: '+fc.bangRecommend+'</span>'
+    +'</div>'
+    +'<p class="detail-text" style="margin-bottom:7px">'+(fc.bangReason||'')+'</p>'
+    +styleDetail;
+}
+
+/* ════════════════════════════════
+   RENDER RESULTS
+════════════════════════════════ */
+function renderResults(aiResult){
+  setStep(6);
+  document.getElementById('divider').style.display='';
+  document.getElementById('resultsSection').classList.add('visible');
+
+  const pc=personalColorResult;
+  const fs=userFaceShape ? FACE_SHAPES.find(f=>f.type===userFaceShape)||aiResult.faceShape : aiResult.faceShape;
+  const ft=aiResult.features||{};
+  const jaw=aiResult.jawToEar||{};
+  const fc=aiResult.foreheadChin||{};
+  const sMap={'봄웜':'season-spring','여름쿨':'season-summer','가을웜':'season-autumn','겨울쿨':'season-winter'};
+  const sClass=sMap[Object.keys(sMap).find(k=>(pc.season||'').includes(k))||'']||'season-spring';
+
+  const swatches=(pc.bestColors||[]).map((h,i)=>
+    `<div class="swatch" style="background:${h}" title="${pc.colorNames?.[i]||h}"><span class="swatch-tip">${pc.colorNames?.[i]||''}</span></div>`).join('');
+  const avoidHair=(aiResult.avoidHair||[]).map(h=>`<div class="avoid-item">${h}</div>`).join('');
+  const hi=gender==='female'?'💇‍♀️':'💇‍♂️';
+
+  const hairCards=(aiResult.hairStyles||[]).map(h=>`
+    <div class="hair-card">
+      <div class="hair-card-img">${h.emoji||hi}</div>
+      <div class="hair-card-info">
+        <div class="hair-name">${h.name}</div>
+        <div class="hair-desc" style="margin:2px 0 3px;color:var(--brown);font-size:0.67rem">${h.length||''} · ${h.volume||''}</div>
+        <div class="hair-desc">${h.whyGood||''}</div>
+        <div class="hair-tags">${(h.tags||[]).map(t=>`<span class="hair-tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>`).join('');
+
+  // 귀끝~턱 길이 바
+  const lenMap={'짧다':30,'보통':60,'길다':90};
+  const lenPct=lenMap[(jaw.lengthEstimate||'').includes('짧')? '짧다':(jaw.lengthEstimate||'').includes('길')? '길다':'보통']||55;
+  const bobColorMap={'매우적합':'rec-good','적합':'rec-good','보통':'rec-caution','부적합':'rec-avoid'};
+  const bobClass=bobColorMap[jaw.bobRecommend]||'rec-caution';
+
+  // 연예인 카드
+  const celebCards=(aiResult.celebrities||[]).map(cel=>`
+    <div class="celeb-card">
+      <span class="celeb-emoji">${cel.emoji||'⭐'}</span>
+      <div class="celeb-name">${cel.name}</div>
+      <div class="celeb-reason">${cel.reason||''}</div>
+      <div class="celeb-tags">${(cel.tags||[]).map(t=>`<span class="celeb-tag">${t}</span>`).join('')}</div>
+    </div>`).join('');
+
+  const gc=gender==='female'?'var(--rose)':'var(--blue)';
+  const gl=gender==='female'?'👩 여성':'👨 남성';
+  const rcIcon=gender==='female'?'sage':'blue';
+  const fsIsUser=!!userFaceShape;
+  const faceTag=fsIsUser?`<span class="source-tag source-user">✏️ 직접선택</span>`:`<span class="source-tag source-ai">🤖 AI분석</span>`;
+
+  document.getElementById('resultSubtitle').textContent=aiResult.overallTip||'';
+  document.getElementById('resultsGrid').innerHTML=`
+    <!-- 퍼스널컬러 -->
+    <div class="result-card">
+      <div class="rc-header"><div class="rc-icon gold">🎨</div><div class="rc-title">퍼스널컬러</div>
+        <span class="source-tag source-quiz" style="margin-left:auto">✓ 퀴즈진단</span>
+      </div>
+      <div class="rc-body">
+        <div class="season-badge ${sClass}">${pc.season} — ${pc.subtype}</div>
+        <p class="detail-text" style="margin-bottom:7px">${pc.characteristics}</p>
+        <div style="font-size:0.73rem;color:var(--muted);letter-spacing:1px;margin-bottom:5px">어울리는 컬러 팔레트</div>
+        <div class="palette-row">${swatches}</div>
+        <div style="margin-top:9px"><div class="avoid-list">${(pc.avoidColors||[]).map(x=>`<div class="avoid-item">${x} 계열은 피하세요</div>`).join('')}</div></div>
+        <div style="margin-top:10px;padding:9px 11px;background:var(--warm);border-radius:10px">
+          <div style="font-size:0.71rem;color:var(--gold);letter-spacing:1px;margin-bottom:3px">✦ 추천 헤어 컬러</div>
+          <p class="detail-text">${pc.hairColorRec}</p>
+        </div>
+        ${pc.pcCelebs&&pc.pcCelebs.length?`
+        <div style="margin-top:10px;padding:9px 11px;background:linear-gradient(135deg,rgba(201,169,110,0.08),rgba(212,160,160,0.08));border-radius:10px;border:1px solid rgba(201,169,110,0.2)">
+          <div style="font-size:0.71rem;color:var(--gold);letter-spacing:1px;margin-bottom:6px">⭐ 비슷한 퍼스널컬러 연예인</div>
+          ${pc.pcCelebs.map(cel=>'<div style="font-size:0.8rem;color:var(--brown);padding:3px 0;display:flex;align-items:center;gap:6px"><span style=\"color:var(--gold)\">✦</span>'+cel+'</div>').join('')}
+        </div>`:''}
+      </div>
+    </div>
+
+    <!-- 얼굴형 -->
+    <div class="result-card" id="faceShapeCard">
+      <div class="rc-header"><div class="rc-icon rose">💎</div><div class="rc-title">얼굴형 분석</div>${faceTag}</div>
+      <div class="rc-body">${buildFaceShapeCardBody(fs,fsIsUser)}</div>
+    </div>
+
+    <!-- 이목구비 상세 -->
+    <div class="result-card">
+      <div class="rc-header"><div class="rc-icon gold">👁️</div><div class="rc-title">이목구비 상세 분석</div><span class="source-tag source-ai" style="margin-left:auto">🤖 AI</span></div>
+      <div class="rc-body">
+        <div class="feature-grid">
+          <div class="feature-item"><div class="feature-icon">👁️</div><div><div class="feature-label">눈</div><div class="feature-val">${ft.eyes||'-'}</div></div></div>
+          <div class="feature-item"><div class="feature-icon">👃</div><div><div class="feature-label">코</div><div class="feature-val">${ft.nose||'-'}</div></div></div>
+          <div class="feature-item"><div class="feature-icon">👄</div><div><div class="feature-label">입술</div><div class="feature-val">${ft.lips||'-'}</div></div></div>
+          <div class="feature-item"><div class="feature-icon">🫀</div><div><div class="feature-label">턱선</div><div class="feature-val">${ft.jawline||'-'}</div></div></div>
+        </div>
+        <div style="margin-top:10px;padding:9px 11px;background:linear-gradient(135deg,rgba(201,169,110,0.1),rgba(212,160,160,0.1));border-radius:10px">
+          <div style="font-size:0.71rem;color:var(--muted);margin-bottom:3px">전체 인상</div>
+          <div class="detail-text" style="color:var(--brown);font-weight:400">${ft.overall||'-'}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 귀끝~턱 길이 분석 -->
+    <div class="result-card">
+      <div class="rc-header"><div class="rc-icon rose">📐</div><div class="rc-title">귀끝~턱 길이 & 헤어 길이 추천</div></div>
+      <div class="rc-body">
+        <div class="length-bar-wrap">
+          <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-bottom:3px"><span>짧음</span><span>보통</span><span>길음</span></div>
+          <div class="length-bar-track"><div class="length-bar-fill" id="lenFill" style="width:0%"></div></div>
+          <div style="font-size:0.78rem;color:var(--brown);font-weight:500;margin-top:4px">${jaw.lengthEstimate||'분석 중'}</div>
+        </div>
+        <div class="length-rec">
+          <span class="length-rec-badge ${bobClass}">단발: ${jaw.bobRecommend||'-'}</span>
+        </div>
+        <p class="detail-text" style="margin-top:8px">${jaw.bobReason||''}</p>
+        ${jaw.volumePosition?`<div class="volume-tip">💡 <strong>볼륨 포인트:</strong> ${jaw.volumePosition}</div>`:''}
+        ${jaw.noVolumeNote?`<div class="volume-tip" style="margin-top:6px;border-color:var(--blue)">✂️ <strong>볼륨 없는 스타일:</strong> ${jaw.noVolumeNote}</div>`:''}
+        ${jaw.longHairNote?`<p class="detail-text" style="margin-top:7px;font-size:0.77rem">장발: ${jaw.longHairNote}</p>`:''}
+      </div>
+    </div>
+
+    <!-- 이마·하관 + 앞머리 추천 -->
+    <div class="result-card">
+      <div class="rc-header"><div class="rc-icon gold">💇</div><div class="rc-title">이마·하관 비율 & 앞머리 추천</div><span class="source-tag source-ai" style="margin-left:auto">🤖 AI</span></div>
+      <div class="rc-body" id="bangCardBody"></div>
+    </div>
+
+    <!-- 추천 헤어스타일 -->
+    <div class="result-card wide">
+      <div class="rc-header"><div class="rc-icon ${rcIcon}">${hi}</div>
+        <div class="rc-title">${gender==='female'?'여성':'남성'} 추천 헤어스타일 3선</div>
+        <span style="margin-left:auto;font-size:0.69rem;color:${gc};padding:2px 8px;border:1px solid ${gc};border-radius:9px;opacity:0.85">${gl}</span>
+      </div>
+      <div class="rc-body"><div class="hair-grid">${hairCards}</div></div>
+    </div>
+
+    <!-- 피해야 할 스타일 -->
+    <div class="result-card">
+      <div class="rc-header"><div class="rc-icon rose">⚠️</div><div class="rc-title">피해야 할 헤어스타일</div></div>
+      <div class="rc-body"><div class="avoid-list">${avoidHair}</div></div>
+    </div>
+
+    <!-- 닮은 연예인 -->
+    <div class="result-card">
+      <div class="rc-header"><div class="rc-icon gold">⭐</div><div class="rc-title">닮은 연예인</div><span class="source-tag source-ai" style="margin-left:auto">🤖 AI</span></div>
+      <div class="rc-body">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:10px">얼굴형·이목구비·퍼스널컬러 기반 매칭</div>
+        <div class="celeb-grid">${celebCards||'<div style="color:var(--muted);font-size:0.8rem">연예인 정보 없음</div>'}</div>
+      </div>
+    </div>`;
+
+  showManualFacePicker(aiResult.faceShape);
+
+  // 앞머리 카드 채우기
+  const bangBodyEl = document.getElementById('bangCardBody');
+  if(bangBodyEl) bangBodyEl.innerHTML = buildBangCard(aiResult.foreheadChin||{});
+
+  // 길이 바 애니메이션
+  setTimeout(()=>{
+    const lf=document.getElementById('lenFill');
+    if(lf) lf.style.width=lenPct+'%';
+  },400);
+
+  setTimeout(()=>{ document.getElementById('divider').scrollIntoView({behavior:'smooth',block:'start'}); },200);
+}
+
+/* ════════════════════════════════
+   BACK / RESET
+════════════════════════════════ */
+function goBack(from){
+  if(from==='hairLength'){
+    hide('hairLengthSection');
+    document.getElementById('genderSection').style.display='';
+    document.getElementById('genderSection').classList.add('fade-in');
+    setStep(1);
+  } else if(from==='quiz'){
+    hide('quizSection');
+    show('hairLengthSection');
+    setStep(2);
+  } else if(from==='upload'){
+    hide('uploadSection'); clearPhoto(); stopCamera();
+    show('quizSection'); currentQ=QUIZ.length-1; renderQuiz();
+    setStep(3);
+  }
+}
+
+function resetAll(){
+  gender=null; hairLength=null; quizAnswers={}; personalColorResult=null;
+  finalB64=null; aiFaceShape=null; userFaceShape=null;
+  clearPhoto(); stopCamera();
+  document.getElementById('genderSection').style.display='';
+  document.getElementById('genderSection').classList.add('fade-in');
+  document.querySelectorAll('.gender-card').forEach(c=>c.classList.remove('selected'));
+  ['quizSection','uploadSection','hairLengthSection'].forEach(hide);
+  document.getElementById('analysisSection').style.display='none';
+  document.getElementById('analysisSection').classList.remove('visible');
+  document.getElementById('resultsSection').classList.remove('visible');
+  document.getElementById('divider').style.display='none';
+  const fp=document.getElementById('facePickerWrap'); if(fp) fp.remove();
+  const btn=document.getElementById('btnDoAnalysis');
+  btn.disabled=false; btn.innerHTML='✦ &nbsp; AI 분석 시작하기 &nbsp; ✦';
+  switchTab('upload');
+  setStep(1);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ════════════════════════════════
+   LOCK SCREEN & ADMIN
+════════════════════════════════ */
+// ── API 키 관리 ──────────────────────────────
+function getApiKey(){ try{ return localStorage.getItem('ynh_api_key')||''; }catch(e){ return ''; } }
+function saveApiKeyStore(k){ try{ localStorage.setItem('ynh_api_key',k); }catch(e){} }
+function saveApiKey(){
+  const k=document.getElementById('adminApiKey').value.trim();
+  if(!k.startsWith('sk-')){ document.getElementById('adminStatus').style.color='#f08080'; document.getElementById('adminStatus').textContent='올바른 API 키 형식이 아니에요 (sk-ant-... 로 시작해야 해요)'; return; }
+  saveApiKeyStore(k);
+  document.getElementById('adminStatus').style.color='#2a7a50'; document.getElementById('adminStatus').textContent='✅ API 키가 저장되었어요!';
+  updateApiKeyStatus();
+  setTimeout(()=>document.getElementById('adminStatus').textContent='',2000);
+}
+function updateApiKeyStatus(){
+  const k=getApiKey();
+  const el=document.getElementById('apiKeyStatus');
+  if(el) el.innerHTML=k ? '<span style="color:#2a7a50">✅ 설정됨 ('+k.slice(0,10)+'...)</span>' : '<span style="color:#f08080">❌ 미설정</span>';
+  const inp=document.getElementById('adminApiKey');
+  if(inp && k) inp.placeholder='저장된 키: '+k.slice(0,12)+'...';
+}
+
+// ── 비밀번호 체계 ──────────────────────────────
+// 고객 입장용: 기본 123  (관리자가 변경 가능)
+// 관리자 전용: 기본 220817  (코드에만 존재, 변경 불가)
+const ADMIN_PW = '220817';           // 관리자 고정 비밀번호
+const DEFAULT_CUSTOMER_PW = '123';   // 고객 기본 비밀번호
+
+function getCustomerPw(){ try{ return localStorage.getItem('ynh_customer_pw')||DEFAULT_CUSTOMER_PW; }catch(e){ return DEFAULT_CUSTOMER_PW; } }
+function saveCustomerPw(pw){ try{ localStorage.setItem('ynh_customer_pw',pw); }catch(e){} }
+function isUnlocked(){ try{ return sessionStorage.getItem('ynh_unlocked')==='1'; }catch(e){ return false; } }
+function setUnlocked(){ try{ sessionStorage.setItem('ynh_unlocked','1'); }catch(e){} }
+
+// 고객 입장 시도
+function tryUnlock(){
+  const val=document.getElementById('lockInput').value;
+  const card=document.querySelector('.lock-card');
+  if(val===getCustomerPw() || val===ADMIN_PW){
+    document.getElementById('lockScreen').classList.add('hidden');
+    document.getElementById('adminBtn').style.display='flex';
+    setUnlocked();
+  } else {
+    document.getElementById('lockError').textContent='비밀번호가 틀렸어요. 다시 입력해주세요.';
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+    document.getElementById('lockInput').value='';
+    document.getElementById('lockInput').focus();
+    setTimeout(()=>document.getElementById('lockError').textContent='',2500);
+  }
+}
+function toggleLockEye(){
+  const inp=document.getElementById('lockInput');
+  inp.type=inp.type==='password'?'text':'password';
+}
+
+// 관리자 버튼 클릭 → 관리자 비밀번호 먼저 확인
+function openAdmin(){
+  // 관리자 비밀번호 확인 팝업 먼저
+  document.getElementById('adminAuthWrap').style.display='';
+  document.getElementById('adminPanelWrap').style.display='none';
+  document.getElementById('adminAuthPw').value='';
+  document.getElementById('adminAuthError').textContent='';
+  document.getElementById('adminStatus').textContent='';
+  document.getElementById('adminCurrentPw').value='';
+  document.getElementById('adminNewPw').value='';
+  document.getElementById('adminConfirmPw').value='';
+  document.getElementById('adminModal').classList.add('open');
+  setTimeout(()=>{ document.getElementById('adminAuthPw').focus(); updateApiKeyStatus(); },150);
+}
+function tryAdminAuth(){
+  const val=document.getElementById('adminAuthPw').value;
+  if(val===ADMIN_PW){
+    document.getElementById('adminAuthWrap').style.display='none';
+    document.getElementById('adminPanelWrap').style.display='';
+    // 현재 고객 비밀번호 표시 (마스킹)
+    const cpw=getCustomerPw();
+    document.getElementById('currentPwDisplay').textContent=cpw[0]+'*'.repeat(cpw.length-1);
+  } else {
+    document.getElementById('adminAuthError').textContent='관리자 비밀번호가 틀렸습니다.';
+    document.getElementById('adminAuthPw').value='';
+    document.getElementById('adminAuthPw').focus();
+    setTimeout(()=>document.getElementById('adminAuthError').textContent='',2000);
+  }
+}
+function closeAdmin(){ document.getElementById('adminModal').classList.remove('open'); }
+function saveAdminPw(){
+  const nw=document.getElementById('adminNewPw').value;
+  const cf=document.getElementById('adminConfirmPw').value;
+  const st=document.getElementById('adminStatus');
+  if(nw.length<2){ st.style.color='#f08080'; st.textContent='새 비밀번호는 2자 이상이어야 해요.'; return; }
+  if(nw!==cf){ st.style.color='#f08080'; st.textContent='새 비밀번호가 일치하지 않아요.'; return; }
+  saveCustomerPw(nw);
+  st.style.color='#2a7a50'; st.textContent='✅ 고객 비밀번호가 변경되었어요!';
+  setTimeout(closeAdmin,1400);
+}
+// 모달 외부 클릭 닫기
+document.getElementById('adminModal').addEventListener('click',function(e){ if(e.target===this) closeAdmin(); });
+// 관리자 인증 엔터키
+document.getElementById('adminAuthPw').addEventListener('keydown',function(e){ if(e.key==='Enter') tryAdminAuth(); });
+
+// 이미 잠금 해제된 세션이면 바로 통과
+if(isUnlocked()){
+  document.getElementById('lockScreen').classList.add('hidden');
+  document.getElementById('adminBtn').style.display='flex';
+}
+
+/* ════════════════════════════════
+   RECORD SAVE / VIEW
+════════════════════════════════ */
+function getRecords(){ try{ return JSON.parse(localStorage.getItem('ynh_records')||'[]'); }catch(e){ return []; } }
+function setRecords(arr){ try{ localStorage.setItem('ynh_records', JSON.stringify(arr)); }catch(e){} }
+
+function showToast(msg){
+  const t=document.getElementById('saveToast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+function saveRecord(){
+  if(!personalColorResult){ showToast('⚠️ 분석 결과가 없어요'); return; }
+  const now=new Date();
+  const dateStr=now.getFullYear()+'.'+(now.getMonth()+1).toString().padStart(2,'0')+'.'+now.getDate().toString().padStart(2,'0');
+  const timeStr=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const pc=personalColorResult;
+  const fs=userFaceShape||aiFaceShape?.type||'미분석';
+  const hairStyleNames=(document.querySelectorAll('.hair-name')||[]);
+  const styles=Array.from(hairStyleNames).slice(0,3).map(el=>el.textContent).filter(Boolean);
+
+  const record={
+    id: Date.now(),
+    date: dateStr,
+    time: timeStr,
+    gender: gender==='female'?'여성':'남성',
+    hairLength: hairLength==='short'?'짧은머리':'긴머리',
+    season: pc.season||'',
+    subtype: pc.subtype||'',
+    faceShape: fs,
+    hairStyles: styles,
+    overallTip: document.getElementById('resultSubtitle')?.textContent||''
+  };
+
+  const records=getRecords();
+  records.unshift(record); // 최신순
+  if(records.length>200) records.splice(200); // 최대 200건
+  setRecords(records);
+  showToast('✅ 결과가 저장됐어요! (총 '+records.length+'건)');
+}
+
+function openRecords(){
+  renderRecords();
+  document.getElementById('recordsModal').classList.add('open');
+}
+function closeRecords(){ document.getElementById('recordsModal').classList.remove('open'); }
+document.getElementById('recordsModal').addEventListener('click',function(e){ if(e.target===this) closeRecords(); });
+
+function renderRecords(){
+  const records=getRecords();
+  const scroll=document.getElementById('recordsScroll');
+
+  if(records.length===0){
+    scroll.innerHTML='<div class="records-empty">📭 저장된 방문 기록이 없어요<br><span style="font-size:0.75rem;margin-top:6px;display:block">분석 결과 화면에서 저장 버튼을 눌러주세요</span></div>';
+    return;
+  }
+
+  // 통계
+  const total=records.length;
+  const femaleCount=records.filter(r=>r.gender==='여성').length;
+  const colorMap={};
+  records.forEach(r=>{ if(r.season) colorMap[r.season]=(colorMap[r.season]||0)+1; });
+  const topColor=Object.entries(colorMap).sort((a,b)=>b[1]-a[1])[0];
+
+  const statsHtml=`
+    <div class="records-stats">
+      <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-label">총 방문</div></div>
+      <div class="stat-box"><div class="stat-num">${femaleCount}</div><div class="stat-label">여성 고객</div></div>
+      <div class="stat-box"><div class="stat-num" style="font-size:0.9rem;padding-top:6px">${topColor?topColor[0]:'—'}</div><div class="stat-label">최다 컬러</div></div>
+    </div>`;
+
+  const itemsHtml=records.map(r=>`
+    <div class="record-item" id="rec-${r.id}">
+      <button class="record-del" onclick="deleteRecord(${r.id})" title="삭제">✕</button>
+      <div class="record-date"><div class="record-date-dot"></div>${r.date} ${r.time}</div>
+      <div class="record-badges">
+        <span class="record-badge rb-gender">${r.gender||''}</span>
+        <span class="record-badge rb-length">${r.hairLength||''}</span>
+        <span class="record-badge rb-color">🎨 ${r.season} — ${r.subtype}</span>
+        <span class="record-badge rb-face">💎 ${r.faceShape}</span>
+      </div>
+      ${r.hairStyles&&r.hairStyles.length?'<div class="record-hairs">추천 스타일: '+r.hairStyles.join(' · ')+'</div>':''}
+      ${r.overallTip?'<div style="font-size:0.74rem;color:var(--muted);line-height:1.55">'+r.overallTip+'</div>':''}
+    </div>`).join('');
+
+  scroll.innerHTML=statsHtml+itemsHtml;
+}
+
+function deleteRecord(id){
+  const records=getRecords().filter(r=>r.id!==id);
+  setRecords(records);
+  const el=document.getElementById('rec-'+id);
+  if(el){ el.style.opacity='0'; el.style.transform='translateX(30px)'; el.style.transition='all 0.25s'; setTimeout(()=>renderRecords(),260); }
+}
+
+function clearAllRecords(){
+  if(!confirm('전체 기록을 삭제할까요?')) return;
+  setRecords([]);
+  renderRecords();
+}
+
+/* ── 결과 이미지 저장 ── */
+async function saveResultImage(){
+  const btn=document.querySelector('.btn-img-save');
+  btn.disabled=true; btn.textContent='⏳ 이미지 생성 중...';
+  try{
+    // html2canvas CDN 동적 로드
+    if(!window.html2canvas){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+    const grid=document.getElementById('resultsGrid');
+    const canvas=await html2canvas(grid,{
+      backgroundColor:'#faf7f2',
+      scale:2,
+      useCORS:true,
+      logging:false
+    });
+    // 상단에 로고 + 날짜 텍스트 추가
+    const final=document.createElement('canvas');
+    final.width=canvas.width;
+    final.height=canvas.height+80;
+    const ctx2=final.getContext('2d');
+    ctx2.fillStyle='#faf7f2';
+    ctx2.fillRect(0,0,final.width,final.height);
+    // 헤더 텍스트
+    ctx2.fillStyle='#c9a96e';
+    ctx2.font='bold '+(canvas.width*0.025)+'px serif';
+    ctx2.textAlign='center';
+    ctx2.fillText('YOUNG N HAIR STUDIO', final.width/2, 38);
+    ctx2.fillStyle='#9c8878';
+    ctx2.font=(canvas.width*0.016)+'px sans-serif';
+    const now=new Date();
+    ctx2.fillText(now.getFullYear()+'.'+(now.getMonth()+1).toString().padStart(2,'0')+'.'+now.getDate().toString().padStart(2,'0'), final.width/2, 62);
+    ctx2.drawImage(canvas,0,80);
+    // 저장
+    const a=document.createElement('a');
+    a.href=final.toDataURL('image/png');
+    a.download='YNGHAIR_결과_'+Date.now()+'.png';
+    a.click();
+    showToast('🖼️ 이미지가 저장됐어요!');
+  }catch(e){
+    showToast('⚠️ 이미지 저장 실패: '+e.message);
+  }
+  btn.disabled=false; btn.textContent='🖼️  결과 이미지로 저장하기';
+}
+
+</script>
+</body>
+</html>
