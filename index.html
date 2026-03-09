@@ -171,8 +171,8 @@ main{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:36px 20px
 #zoomSlider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--gold-light);outline:none}
 #zoomSlider::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 2px 5px rgba(201,169,110,0.4)}
 .zoom-val{font-size:0.7rem;color:var(--brown);min-width:28px;text-align:right}
-#cameraWrap{display:none;position:relative;border-radius:18px;overflow:hidden;background:#000}
-#cameraVideo{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+#cameraWrap{display:none;position:relative;border-radius:18px;overflow:hidden;background:#000;width:100%;max-width:420px;margin:0 auto}
+#cameraVideo{display:block;width:100%;height:auto;min-height:280px;aspect-ratio:3/4;object-fit:cover;transform:scaleX(-1);-webkit-transform:scaleX(-1)}
 #cameraOval{position:absolute;inset:0;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;padding-top:5%}
 #cameraOval svg{width:54%}
 .camera-label{position:absolute;font-size:0.67rem;color:rgba(255,255,255,0.75);white-space:nowrap;letter-spacing:0.8px;pointer-events:none;bottom:28%;left:50%;transform:translateX(-50%)}
@@ -569,7 +569,7 @@ main{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:36px 20px
           <div id="cameraOval"><svg viewBox="0 0 100 130" fill="none"><ellipse class="breath" cx="50" cy="62" rx="46" ry="58" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" stroke-dasharray="6 4"/></svg></div>
           <div class="camera-label">얼굴을 타원에 맞춰주세요</div>
         </div>
-        <canvas id="snapCanvas" style="display:none;width:100%;border-radius:18px"></canvas>
+        <canvas id="snapCanvas" style="display:none;width:100%;max-width:420px;margin:0 auto;border-radius:18px;transform:scaleX(-1);-webkit-transform:scaleX(-1)"></canvas>
         <button class="btn-cam" id="btnStartCam" onclick="startCamera()">📷 카메라 켜기</button>
         <button class="btn-cam" id="btnSnap" onclick="takeSnap()" style="display:none;background:linear-gradient(135deg,var(--brown),#7a5040)">📸 촬영하기</button>
         <button class="btn-cam" id="btnRetakeCam" onclick="retakeCamera()" style="display:none;background:linear-gradient(135deg,#556,#334)">↩ 다시 촬영</button>
@@ -1079,7 +1079,7 @@ async function startCamera(){
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:720},height:{ideal:960}},audio:false});
     const v=document.getElementById('cameraVideo'); v.srcObject=stream; v.play();
-    document.getElementById('cameraWrap').style.display='';
+    document.getElementById('cameraWrap').style.display='block';
     document.getElementById('btnStartCam').style.display='none';
     document.getElementById('btnSnap').style.display='';
   }catch(e){ alert('카메라 접근 권한이 필요합니다.\n('+e.message+')'); }
@@ -1196,9 +1196,9 @@ async function doAnalysis(){
   ].join('\n');
 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('https://youngnhair-api.dldkdud0223.workers.dev',{
       method:'POST',
-      headers:(()=>{ const h={'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}; const k=getApiKey(); if(k) h['x-api-key']=k; return h; })(),
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-6',
         max_tokens:3000,
@@ -1349,9 +1349,9 @@ async function doAnalysisWithFaceHint(faceHint){
   ].join('\n');
 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('https://youngnhair-api.dldkdud0223.workers.dev',{
       method:'POST',
-      headers:(()=>{ const h={'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}; const k=getApiKey(); if(k) h['x-api-key']=k; return h; })(),
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-6',
         max_tokens:3000,
@@ -1657,7 +1657,12 @@ function resetAll(){
    LOCK SCREEN & ADMIN
 ════════════════════════════════ */
 // ── API 키 관리 ──────────────────────────────
-function getApiKey(){ try{ return localStorage.getItem('ynh_api_key')||''; }catch(e){ return ''; } }
+// 아래 HARDCODED_API_KEY에 API 키를 직접 입력하면 localStorage 없이도 작동해요
+const HARDCODED_API_KEY = '';  // 예: 'sk-ant-api03-xxxxx'
+function getApiKey(){
+  if(HARDCODED_API_KEY) return HARDCODED_API_KEY;
+  try{ return localStorage.getItem('ynh_api_key')||''; }catch(e){ return ''; }
+}
 function saveApiKeyStore(k){ try{ localStorage.setItem('ynh_api_key',k); }catch(e){} }
 function saveApiKey(){
   const k=document.getElementById('adminApiKey').value.trim();
